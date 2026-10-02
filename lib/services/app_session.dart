@@ -282,7 +282,11 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
+  /// Clears local session state AND signs out of Supabase (otherwise the
+  /// persisted Supabase session would silently log this device back in
+  /// next launch via [AuthService.restoreSession]).
+  Future<void> logout() async {
+    await auth.logout();
     currentUser = null;
     pitches = [];
     customPitchTypes = [];
@@ -535,7 +539,7 @@ class AppSession extends ChangeNotifier {
     await storage.saveCustomPitchTypes(currentUser!.id, customPitchTypes);
     await storage.saveCustomPitchTypeNames(currentUser!.id, customPitchTypeNames);
     await storage.saveCustomPitchTypeColors(
-        currentUser!.id, customPitchTypeColors.map((k, v) => MapEntry(k, v.toARGB32())));
+        currentUser!.id, customPitchTypeColors.map((k, v) => MapEntry(k, v.value)));
     notifyListeners();
     return key;
   }
@@ -550,7 +554,7 @@ class AppSession extends ChangeNotifier {
     customPitchTypeColors[k] = color;
     _syncPitchColors();
     await storage.saveCustomPitchTypeColors(
-        currentUser!.id, customPitchTypeColors.map((k, v) => MapEntry(k, v.toARGB32())));
+        currentUser!.id, customPitchTypeColors.map((k, v) => MapEntry(k, v.value)));
     notifyListeners();
   }
 

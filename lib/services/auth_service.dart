@@ -1,10 +1,5 @@
-import 'dart:convert';
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'package:uuid/uuid.dart';
 import '../models/user.dart';
-import 'billing_service.dart';
-import 'storage_service.dart';
+import 'supabase_config.dart';
 
 /// Result wrapper — mirrors the R `check_creds()` return shape
 /// (list(result=TRUE/FALSE, message=..., user_info=...)).
@@ -18,85 +13,72 @@ class AuthResult {
 /// ══════════════════════════════════════════════════════════════
 /// AUTH SERVICE
 ///
-/// Replaces R's `sodium::password_store` / `password_verify` +
-/// SQLite `users` table. Uses a per-user random salt + SHA-256,
-/// which is adequate for a local-storage demo app. For a production
-/// deployment behind a real backend, swap this for bcrypt/argon2 on
-/// the server and never store or compare hashes on-device.
+/// Backed by Supabase Auth + a `public.profiles` table (see
+/// supabase_schema.sql), instead of the old local SHA-256 scheme.
+/// Login is by EMAIL now (Supabase Auth's native identifier) — the
+/// app-level "username" is a separate display field stored on the
+/// profile row, unchanged elsewhere in the app.
+///
+/// Admin operations that need to create a user or set/reset a
+/// password go through the `admin-users` Edge Function instead of
+/// happening here directly — those require the service-role key,
+/// which must never be embedded in this (public, static-hosted) app.
+/// See admin-users_index.ts.
 /// ══════════════════════════════════════════════════════════════
 class AuthService {
-  final StorageService storage;
-  final _uuid = const Uuid();
-
-  AuthService(this.storage);
-
-  String _generateSalt() {
-    final rand = Random.secure();
-    final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
-    return base64UrlEncode(bytes);
+  /// Builds an [AppUser] from the current Supabase session + a fetched
+  /// `profiles` row. Throws if there's no logged-in session.
+  Future<AppUser> _currentAppUser() async {
+    final authUser = sb.auth.currentUser!;
+    final profile =
+        await sb.from('profiles').select().eq('id', authUser.id).single();
+    return AppUser.fromSupabase(
+      id: authUser.id,
+      email: authUser.email ?? '',
+      profile: profile,
+    );
   }
 
-  String _hash(String password, String salt) {
-    final bytes = utf8.encode('$salt::$password');
-    return sha256.convert(bytes).toString();
+  /// Call once at startup: if a Supabase session was persisted from a
+  /// previous visit (same browser/device), rebuilds the [AppUser] from
+  /// it so the person doesn't have to log in again. Returns null if
+  /// there's no existing session.
+  Future<AppUser?> restoreSession() async {
+    if (sb.auth.currentSession == null) return null;
+    try {
+      return await _currentAppUser();
+    } catch (_) {
+      return null; // stale/invalid session — fall back to the login screen
+    }
   }
 
-  /// Bootstraps the very first admin account — but ONLY if you explicitly
-  /// provide credentials at build/run time via --dart-define. This app
-  /// ships with NO default admin account and NO hardcoded password;
-  /// anyone reading the source or decompiling the built app should not
-  /// be able to find a working login.
-  ///
-  /// To create your first admin account, run the app once with:
-  ///
-  ///   flutter run --dart-define=SEED_ADMIN_USER=youradminname \
-  ///               --dart-define=SEED_ADMIN_PASS=SomeStrongPassword123
-  ///
-  /// After that first run, the account exists in local storage — stop
-  /// passing those --dart-define flags for all future runs/builds (and
-  /// definitely don't ship a release build with them set, since that
-  /// bakes the password into the binary). Once you're logged in as
-  /// admin, use the Admin Panel to create additional admins normally —
-  /// you never need this bootstrap path again after the first run.
-  Future<void> ensureSeedAdmin() async {
-    const seedUser = String.fromEnvironment('SEED_ADMIN_USER');
-    const seedPass = String.fromEnvironment('SEED_ADMIN_PASS');
-    if (seedUser.isEmpty || seedPass.isEmpty) return; // no-op by default
-
-    final users = await storage.loadUsers();
-    if (users.any((u) => u.username.toLowerCase() == seedUser.toLowerCase())) {
-      return; // already bootstrapped
+  Future<AuthResult> login(String email, String password) async {
+    try {
+      final res = await sb.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+      if (res.user == null) {
+        return AuthResult(success: false, message: 'Invalid email or password.');
+      }
+      final user = await _currentAppUser();
+      if (!user.isActive) {
+        await sb.auth.signOut();
+        return AuthResult(success: false, message: 'Account inactive. Contact support.');
+      }
+      return AuthResult(success: true, user: user);
+    } on AuthException catch (e) {
+      return AuthResult(success: false, message: e.message);
+    } catch (e) {
+      return AuthResult(success: false, message: 'Invalid email or password.');
     }
-    final salt = _generateSalt();
-    users.add(AppUser(
-      id: _uuid.v4(),
-      username: seedUser,
-      email: '$seedUser@example.com',
-      passwordHash: _hash(seedPass, salt),
-      salt: salt,
-      tier: UserTier.admin,
-      status: SubStatus.active,
-    ));
-    await storage.saveUsers(users);
   }
 
-  Future<AuthResult> login(String username, String password) async {
-    final users = await storage.loadUsers();
-    final match = users.firstWhereOrNullCompat(
-        (u) => u.username.toLowerCase() == username.trim().toLowerCase());
-    if (match == null) {
-      return AuthResult(success: false, message: 'Invalid username or password.');
-    }
-    final hashed = _hash(password, match.salt);
-    if (hashed != match.passwordHash) {
-      return AuthResult(success: false, message: 'Invalid username or password.');
-    }
-    if (!match.isActive) {
-      return AuthResult(success: false, message: 'Account inactive. Contact support.');
-    }
-    return AuthResult(success: true, user: match);
-  }
+  Future<void> logout() => sb.auth.signOut();
 
+  /// Self-serve signup — creates a `basic` tier account directly (no
+  /// admin needed). Supabase sends its own confirmation email unless
+  /// "Confirm email" is turned off in Auth settings.
   Future<AuthResult> signUp({
     required String username,
     required String email,
@@ -111,53 +93,73 @@ class AuthService {
       return AuthResult(success: false, message: 'Email is required.');
     }
     if (password.length < 6) {
-      return AuthResult(
-          success: false, message: 'Password must be at least 6 characters.');
+      return AuthResult(success: false, message: 'Password must be at least 6 characters.');
     }
     if (password != confirmPassword) {
       return AuthResult(success: false, message: 'Passwords do not match.');
     }
     if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username.trim())) {
-      return AuthResult(
-          success: false,
-          message: 'Username: letters, numbers, underscore only.');
+      return AuthResult(success: false, message: 'Username: letters, numbers, underscore only.');
     }
-    final users = await storage.loadUsers();
-    if (users.any(
-        (u) => u.username.toLowerCase() == username.trim().toLowerCase())) {
-      return AuthResult(success: false, message: 'Username already taken.');
+    try {
+      final res = await sb.auth.signUp(
+        email: email.trim(),
+        password: password,
+        data: {'username': username.trim()}, // read by the handle_new_user trigger
+      );
+      if (res.user == null) {
+        return AuthResult(success: false, message: 'Sign up failed.');
+      }
+      // The trigger creates the profiles row, but it fills pitcher_display_name
+      // from username/email before we know if this call also wants a custom tier.
+      if (tier != UserTier.basic) {
+        await sb.from('profiles').update({'tier': tier.label}).eq('id', res.user!.id);
+      }
+      final msg = res.session == null
+          ? 'Account created! Check your email to confirm, then log in.'
+          : 'Account created! You can log in now.';
+      return AuthResult(success: true, message: msg);
+    } on AuthException catch (e) {
+      return AuthResult(success: false, message: e.message);
     }
-    final salt = _generateSalt();
-    // ── BILLING HOOK POINT ──────────────────────────────────────
-    // Both Basic and Plus are paid tiers now (see PricingConfig).
-    // In production, a brand-new account should be SubStatus.pendingPayment
-    // until Stripe/RevenueCat confirms the first payment via webhook —
-    // then your backend flips it to `active` (see billing_service.dart).
-    // For this local-storage demo (no backend wired up yet) we mark new
-    // accounts `active` immediately so the app is usable end-to-end.
-    // Flip the line below once real billing is connected:
-    //   final status = SubStatus.pendingPayment;
-    const status = SubStatus.active;
-    final newUser = AppUser(
-      id: _uuid.v4(),
-      username: username.trim(),
-      email: email.trim(),
-      passwordHash: _hash(password, salt),
-      salt: salt,
-      tier: tier,
-      status: status,
-    );
-    users.add(newUser);
-    await storage.saveUsers(users);
-    final msg =
-        'Account created! (${PricingConfig.priceLabel(tier)}) You can log in now — '
-        'once billing is connected, new accounts will show as pending until '
-        'payment is confirmed.';
-    return AuthResult(success: true, message: msg, user: newUser);
   }
 
   // ── ADMIN OPERATIONS ─────────────────────────────────────
-  Future<List<AppUser>> allUsers() => storage.loadUsers();
+  // create/resetPassword/delete call the admin-users Edge Function
+  // (needs the service-role key, so it can't happen client-side).
+  // update (tier/status) is a plain table write — RLS already allows
+  // this for admins, so it goes straight to Postgres.
+
+  /// profiles doesn't carry email (that lives in auth.users, which the
+  /// client can never query directly) — so the full list, emails
+  /// included, comes from the Edge Function's listUsers action, which
+  /// joins auth.users + profiles server-side using the service role.
+  Future<List<AppUser>> allUsers() async {
+    try {
+      final res = await sb.functions.invoke('admin-users', body: {'action': 'listUsers'});
+      final rows = (res.data as Map)['users'] as List;
+      return rows.map((r) {
+        final row = r as Map<String, dynamic>;
+        return AppUser.fromSupabase(
+          id: row['id'] as String,
+          email: row['email'] as String? ?? '',
+          profile: row,
+        );
+      }).toList();
+    } on FunctionException catch (e) {
+      throw Exception(_funcErrorMessage(e));
+    }
+  }
+
+  /// The Edge Function throws [FunctionException] on any non-2xx status
+  /// (it never returns a non-200 [FunctionResponse]) — pull a readable
+  /// message out of whatever shape the error body comes back as.
+  String _funcErrorMessage(FunctionException e) {
+    final d = e.details;
+    if (d is String && d.isNotEmpty) return d;
+    if (d is Map && d['error'] is String) return d['error'] as String;
+    return e.reasonPhrase ?? 'Request failed (${e.status}).';
+  }
 
   Future<void> adminCreateUser({
     required String username,
@@ -165,22 +167,17 @@ class AuthService {
     required String password,
     required UserTier tier,
   }) async {
-    final users = await storage.loadUsers();
-    if (users.any(
-        (u) => u.username.toLowerCase() == username.trim().toLowerCase())) {
-      throw Exception('Username already taken.');
+    try {
+      await sb.functions.invoke('admin-users', body: {
+        'action': 'createUser',
+        'username': username.trim(),
+        'email': email.trim(),
+        'password': password,
+        'tier': tier.label,
+      });
+    } on FunctionException catch (e) {
+      throw Exception(_funcErrorMessage(e));
     }
-    final salt = _generateSalt();
-    users.add(AppUser(
-      id: _uuid.v4(),
-      username: username.trim(),
-      email: email.trim(),
-      passwordHash: _hash(password, salt),
-      salt: salt,
-      tier: tier,
-      status: SubStatus.active,
-    ));
-    await storage.saveUsers(users);
   }
 
   Future<void> adminUpdateUser(
@@ -188,38 +185,33 @@ class AuthService {
     UserTier? tier,
     SubStatus? status,
   }) async {
-    final users = await storage.loadUsers();
-    final idx = users.indexWhere((u) => u.id == userId);
-    if (idx == -1) throw Exception('User not found.');
-    if (tier != null) users[idx].tier = tier;
-    if (status != null) users[idx].status = status;
-    await storage.saveUsers(users);
+    final patch = <String, dynamic>{};
+    if (tier != null) patch['tier'] = tier.label;
+    if (status != null) patch['status'] = status.label;
+    if (patch.isEmpty) return;
+    await sb.from('profiles').update(patch).eq('id', userId);
   }
 
   Future<void> adminResetPassword(String userId, String newPassword) async {
-    final users = await storage.loadUsers();
-    final idx = users.indexWhere((u) => u.id == userId);
-    if (idx == -1) throw Exception('User not found.');
-    final salt = _generateSalt();
-    users[idx].salt = salt;
-    users[idx].passwordHash = _hash(newPassword, salt);
-    await storage.saveUsers(users);
+    try {
+      await sb.functions.invoke('admin-users', body: {
+        'action': 'resetPassword',
+        'userId': userId,
+        'newPassword': newPassword,
+      });
+    } on FunctionException catch (e) {
+      throw Exception(_funcErrorMessage(e));
+    }
   }
 
   Future<void> adminDeleteUser(String userId) async {
-    final users = await storage.loadUsers();
-    users.removeWhere((u) => u.id == userId);
-    await storage.saveUsers(users);
-  }
-}
-
-/// Small helper since `firstWhereOrNull` requires importing `collection`
-/// in every call site otherwise; kept local to avoid an extra import here.
-extension _FirstWhereOrNull<T> on List<T> {
-  T? firstWhereOrNullCompat(bool Function(T) test) {
-    for (final e in this) {
-      if (test(e)) return e;
+    try {
+      await sb.functions.invoke('admin-users', body: {
+        'action': 'deleteUser',
+        'userId': userId,
+      });
+    } on FunctionException catch (e) {
+      throw Exception(_funcErrorMessage(e));
     }
-    return null;
   }
 }

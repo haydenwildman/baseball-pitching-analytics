@@ -10,8 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
-  shared_preferences: ^2.2.2   # Cross-platform local persistence (users, pitches, games)
-  crypto: ^3.0.3               # Password hashing (SHA-256 + salt)
+  supabase_flutter: ^2.5.6     # Auth + Postgres (users, pitches, settings) — shared backend
   intl: ^0.19.0                # Date formatting
   fl_chart: ^0.68.0            # Bar / line / pie charts (Usage%, ERA trend, etc.)
   uuid: ^4.4.0                 # Unique IDs for users / games / pitch events

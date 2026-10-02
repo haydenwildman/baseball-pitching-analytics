@@ -91,8 +91,9 @@ class _HomeShellState extends State<HomeShell> {
       isAdmin: session.isAdmin,
       pitcherName:
           session.currentUser?.pitcherDisplayName ?? session.currentUser?.username ?? '—',
-      onLogout: () {
-        session.logout();
+      onLogout: () async {
+        await session.logout();
+        if (!context.mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,

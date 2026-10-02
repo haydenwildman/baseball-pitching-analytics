@@ -323,7 +323,7 @@ class BatterHistoryService {
       walks: walks,
       foulBalls: fouls,
       ballsInPlay: bip,
-      lastPitchThrown: lastAb?.pitches.last.pitchType,
+      lastPitchThrown: lastAb == null ? null : lastAb.pitches.last.pitchType,
       lastOutcome: lastAb?.finalOutcome,
     );
   }

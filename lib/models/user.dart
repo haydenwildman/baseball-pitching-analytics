@@ -47,11 +47,9 @@ extension SubStatusX on SubStatus {
 }
 
 class AppUser {
-  final String id; // uuid, stable primary key
+  final String id; // uuid — matches auth.users.id in Supabase
   String username;
   String email;
-  String passwordHash; // salted SHA-256, see AuthService
-  String salt;
   UserTier tier;
   SubStatus status;
   String pitcherDisplayName;
@@ -61,8 +59,6 @@ class AppUser {
     required this.id,
     required this.username,
     required this.email,
-    required this.passwordHash,
-    required this.salt,
     this.tier = UserTier.basic,
     this.status = SubStatus.active,
     String? pitcherDisplayName,
@@ -74,28 +70,21 @@ class AppUser {
   bool get isAdmin => tier == UserTier.admin;
   bool get isActive => status == SubStatus.active;
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'username': username,
-        'email': email,
-        'passwordHash': passwordHash,
-        'salt': salt,
-        'tier': tier.label,
-        'status': status.label,
-        'pitcherDisplayName': pitcherDisplayName,
-        'createdAt': createdAt.toIso8601String(),
-      };
-
-  factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
-        id: j['id'] as String,
-        username: j['username'] as String,
-        email: j['email'] as String,
-        passwordHash: j['passwordHash'] as String,
-        salt: j['salt'] as String,
-        tier: UserTierX.fromString(j['tier'] as String? ?? 'basic'),
-        status: SubStatusX.fromString(j['status'] as String? ?? 'active'),
-        pitcherDisplayName: j['pitcherDisplayName'] as String? ?? j['username'],
-        createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ??
-            DateTime.now(),
+  /// Built from a joined `auth.users` (email) + `public.profiles`
+  /// (username/tier/status/...) row — see AuthService.
+  factory AppUser.fromSupabase({
+    required String id,
+    required String email,
+    required Map<String, dynamic> profile,
+  }) =>
+      AppUser(
+        id: id,
+        username: profile['username'] as String? ?? email.split('@').first,
+        email: email,
+        tier: UserTierX.fromString(profile['tier'] as String? ?? 'basic'),
+        status: SubStatusX.fromString(profile['status'] as String? ?? 'active'),
+        pitcherDisplayName:
+            profile['pitcher_display_name'] as String? ?? profile['username'] as String? ?? email,
+        createdAt: DateTime.tryParse(profile['created_at'] as String? ?? '') ?? DateTime.now(),
       );
 }

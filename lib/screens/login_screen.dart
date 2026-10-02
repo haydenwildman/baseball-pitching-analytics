@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _userCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   String? _error;
   bool _loading = false;
@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _loading = true;
     });
     final session = context.read<AppSession>();
-    final result = await session.auth.login(_userCtrl.text, _passCtrl.text);
+    final result = await session.auth.login(_emailCtrl.text, _passCtrl.text);
     setState(() => _loading = false);
     if (!mounted) return;
     if (result.success && result.user != null) {
@@ -104,9 +104,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontSize: 13)),
                   ),
                 TextField(
-                  controller: _userCtrl,
+                  controller: _emailCtrl,
                   decoration: const InputDecoration(
-                      labelText: 'Username', hintText: 'Your username'),
+                      labelText: 'Email', hintText: 'you@example.com'),
                 ),
                 const SizedBox(height: 12),
                 TextField(

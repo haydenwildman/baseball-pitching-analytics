@@ -1,164 +1,159 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user.dart';
 import '../models/pitch_event.dart';
+import 'supabase_config.dart';
 
 /// ══════════════════════════════════════════════════════════════
 /// STORAGE SERVICE
 ///
-/// The R app used SQLite (`users.db`) for accounts and per-user CSV/RDS
-/// files for pitch data. To keep this Flutter app buildable on every
-/// target platform (Windows, iOS, Android, Web) without native plugin
-/// friction, persistence here uses `shared_preferences`, which is
-/// backed by:
-///   - NSUserDefaults on iOS/macOS
-///   - SharedPreferences on Android
-///   - a local file / registry on Windows/Linux
-///   - localStorage on Web
+/// Backed by Supabase Postgres now — `public.pitch_events` for every
+/// logged pitch/event, and a `settings` jsonb column on
+/// `public.profiles` for the small per-user config blobs (custom
+/// pitch types, hidden built-ins, batter names, pitch type display
+/// names/colors). Row Level Security (see supabase_schema.sql)
+/// enforces that a user can only read/write their own rows; admins
+/// can read everyone's (used nowhere in the UI yet, but available).
 ///
-/// Data is stored as JSON. This keeps the storage layer trivially
-/// swappable for a real backend later (Firebase, Supabase, a REST API,
-/// or sqflite/drift) — everything else in the app talks to this class,
-/// never to shared_preferences directly.
-///
-/// If you outgrow this (e.g. very large pitch logs), swap the body of
-/// this class for an sqflite/drift implementation; the public API
-/// (loadUsers/saveUsers/loadPitchesForUser/...) should not need to change.
+/// Public API intentionally unchanged from the old local-storage
+/// version — AppSession and every screen that calls this class needed
+/// no changes.
 /// ══════════════════════════════════════════════════════════════
 class StorageService {
-  static const _usersKey = 'pa_users_v1';
-  static const _pitchPrefix = 'pa_pitches_v1_'; // + userId
-  static const _customPitchTypePrefix = 'pa_custom_pitch_types_v1_'; // + userId
-  static const _hiddenBuiltInPitchTypePrefix =
-      'pa_hidden_builtin_pitch_types_v1_'; // + userId
-  static const _batterNamesPrefix = 'pa_batter_names_v1_'; // + userId
-  static const _customPitchTypeNamesPrefix =
-      'pa_custom_pitch_type_names_v1_'; // + userId
-  static const _customPitchTypeColorsPrefix =
-      'pa_custom_pitch_type_colors_v1_'; // + userId
-
-  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
-
-  // ── USERS ────────────────────────────────────────────────
-  Future<List<AppUser>> loadUsers() async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_usersKey);
-    if (raw == null) return [];
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list
-        .map((e) => AppUser.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  Future<void> saveUsers(List<AppUser> users) async {
-    final prefs = await _prefs;
-    final raw = jsonEncode(users.map((u) => u.toJson()).toList());
-    await prefs.setString(_usersKey, raw);
-  }
-
   // ── PITCH DATA (per user) ───────────────────────────────
   Future<List<PitchEvent>> loadPitchesForUser(String userId) async {
-    final prefs = await _prefs;
-    final raw = prefs.getString('$_pitchPrefix$userId');
-    if (raw == null) return [];
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list
-        .map((e) => PitchEvent.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final rows = await sb.from('pitch_events').select().eq('user_id', userId).order('ts');
+    return (rows as List).map((r) => _pitchFromRow(r as Map<String, dynamic>)).toList();
   }
 
-  Future<void> savePitchesForUser(
-      String userId, List<PitchEvent> pitches) async {
-    final prefs = await _prefs;
-    final raw = jsonEncode(pitches.map((p) => p.toJson()).toList());
-    await prefs.setString('$_pitchPrefix$userId', raw);
+  /// Syncs the full in-memory pitch list to Supabase: upserts every
+  /// pitch (insert-or-update by id) and deletes any row that's no
+  /// longer present locally (covers undo). Cheaper than a wipe-and-
+  /// reinsert on every single pitch logged, and safe if a call fails
+  /// partway (nothing already-saved gets lost).
+  Future<void> savePitchesForUser(String userId, List<PitchEvent> pitches) async {
+    if (pitches.isEmpty) {
+      await sb.from('pitch_events').delete().eq('user_id', userId);
+      return;
+    }
+    final existingIds = ((await sb.from('pitch_events').select('id').eq('user_id', userId)) as List)
+        .map((r) => r['id'] as String)
+        .toSet();
+    final currentIds = pitches.map((p) => p.id).toSet();
+    final toDelete = existingIds.difference(currentIds);
+    if (toDelete.isNotEmpty) {
+      await sb.from('pitch_events').delete().inFilter('id', toDelete.toList());
+    }
+    await sb.from('pitch_events').upsert(pitches.map((p) => _pitchToRow(p, userId)).toList());
   }
 
-  // ── CUSTOM PITCH TYPES (per user) ───────────────────────
-  /// User-defined pitch type codes (initials typed in on Game Input),
-  /// on top of the built-in FB/CV/CH/SL set.
+  Map<String, dynamic> _pitchToRow(PitchEvent p, String userId) => {
+        'id': p.id,
+        'user_id': userId,
+        'game': p.game,
+        'game_number': p.gameNumber,
+        'batter': p.batter,
+        'batter_number': p.batterNumber,
+        'batting_order': p.battingOrder,
+        'hand': p.hand,
+        'event_type': p.eventType,
+        'pitch_num': p.pitchNum,
+        'pitch_type': p.pitchType,
+        'call': p.call,
+        'outcome': p.outcome,
+        'ab': p.ab,
+        'outs': p.outs,
+        'er': p.er,
+        'x_coord': p.xCoord,
+        'y_coord': p.yCoord,
+        'batted_type': p.battedType,
+        'inning': p.inning,
+        'pa_id': p.paId,
+        'season': p.season,
+        'ts': p.timestamp.toIso8601String(),
+      };
+
+  PitchEvent _pitchFromRow(Map<String, dynamic> r) => PitchEvent(
+        id: r['id'] as String,
+        userId: r['user_id'] as String,
+        game: r['game'] as String,
+        gameNumber: r['game_number'] as int,
+        batter: r['batter'] as int,
+        batterNumber: r['batter_number'] as int?,
+        battingOrder: r['batting_order'] as int? ?? 1,
+        hand: r['hand'] as String? ?? 'R',
+        eventType: r['event_type'] as String? ?? 'pitch',
+        pitchNum: r['pitch_num'] as int?,
+        pitchType: r['pitch_type'] as String?,
+        call: r['call'] as String?,
+        outcome: r['outcome'] as String?,
+        ab: r['ab'] as int? ?? 0,
+        outs: r['outs'] as int? ?? 0,
+        er: (r['er'] as num?)?.toDouble() ?? 0,
+        xCoord: (r['x_coord'] as num?)?.toDouble(),
+        yCoord: (r['y_coord'] as num?)?.toDouble(),
+        battedType: r['batted_type'] as String?,
+        inning: r['inning'] as int?,
+        paId: r['pa_id'] as int? ?? 0,
+        season: r['season'] as int,
+        timestamp: DateTime.tryParse(r['ts'] as String? ?? '') ?? DateTime.now(),
+      );
+
+  // ── PER-USER SETTINGS (custom pitch types, batter names, ...) ──
+  // All five small blobs below share one jsonb column
+  // (profiles.settings) to avoid a proliferation of tiny tables —
+  // each read/write only touches its own key inside that object.
+  Future<Map<String, dynamic>> _loadSettings(String userId) async {
+    final row =
+        await sb.from('profiles').select('settings').eq('id', userId).single();
+    return (row['settings'] as Map<String, dynamic>?) ?? {};
+  }
+
+  Future<void> _patchSettings(String userId, String key, dynamic value) async {
+    final settings = await _loadSettings(userId);
+    settings[key] = value;
+    await sb.from('profiles').update({'settings': settings}).eq('id', userId);
+  }
+
   Future<List<String>> loadCustomPitchTypes(String userId) async {
-    final prefs = await _prefs;
-    return prefs.getStringList('$_customPitchTypePrefix$userId') ?? [];
+    final s = await _loadSettings(userId);
+    return ((s['customPitchTypes'] as List?) ?? []).cast<String>();
   }
 
-  Future<void> saveCustomPitchTypes(String userId, List<String> types) async {
-    final prefs = await _prefs;
-    await prefs.setStringList('$_customPitchTypePrefix$userId', types);
-  }
+  Future<void> saveCustomPitchTypes(String userId, List<String> types) =>
+      _patchSettings(userId, 'customPitchTypes', types);
 
-  // ── HIDDEN BUILT-IN PITCH TYPES (per user) ──────────────
-  /// Built-in pitch type codes (FB/CV/CH/SL) the user has removed from
-  /// their Game Input pitch-type row.
   Future<List<String>> loadHiddenBuiltInPitchTypes(String userId) async {
-    final prefs = await _prefs;
-    return prefs.getStringList('$_hiddenBuiltInPitchTypePrefix$userId') ?? [];
+    final s = await _loadSettings(userId);
+    return ((s['hiddenBuiltInPitchTypes'] as List?) ?? []).cast<String>();
   }
 
-  Future<void> saveHiddenBuiltInPitchTypes(
-      String userId, List<String> types) async {
-    final prefs = await _prefs;
-    await prefs.setStringList('$_hiddenBuiltInPitchTypePrefix$userId', types);
-  }
+  Future<void> saveHiddenBuiltInPitchTypes(String userId, List<String> types) =>
+      _patchSettings(userId, 'hiddenBuiltInPitchTypes', types);
 
-  // ── BATTER NAMES (per user) ─────────────────────────────
-  /// Jersey # → player name, stored as JSON since keys are ints.
+  /// Jersey # → player name. Stored with string keys (jsonb object keys
+  /// are always strings) and converted back to int on read.
   Future<Map<int, String>> loadBatterNames(String userId) async {
-    final prefs = await _prefs;
-    final raw = prefs.getString('$_batterNamesPrefix$userId');
-    if (raw == null) return {};
-    final map = jsonDecode(raw) as Map<String, dynamic>;
+    final s = await _loadSettings(userId);
+    final map = (s['batterNames'] as Map<String, dynamic>?) ?? {};
     return map.map((k, v) => MapEntry(int.parse(k), v as String));
   }
 
-  Future<void> saveBatterNames(String userId, Map<int, String> names) async {
-    final prefs = await _prefs;
-    final raw = jsonEncode(names.map((k, v) => MapEntry(k.toString(), v)));
-    await prefs.setString('$_batterNamesPrefix$userId', raw);
-  }
+  Future<void> saveBatterNames(String userId, Map<int, String> names) =>
+      _patchSettings(userId, 'batterNames', names.map((k, v) => MapEntry(k.toString(), v)));
 
-  // ── CUSTOM PITCH TYPE DISPLAY NAMES (per user) ──────────
-  /// Pitch type key (lowercase, e.g. "knuckleball") → the exact display
-  /// name the user typed in (e.g. "Knuckleball"), so full pitch names can
-  /// be shown everywhere instead of the short internal key.
   Future<Map<String, String>> loadCustomPitchTypeNames(String userId) async {
-    final prefs = await _prefs;
-    final raw = prefs.getString('$_customPitchTypeNamesPrefix$userId');
-    if (raw == null) return {};
-    final map = jsonDecode(raw) as Map<String, dynamic>;
-    return map.map((k, v) => MapEntry(k, v as String));
+    final s = await _loadSettings(userId);
+    return ((s['customPitchTypeNames'] as Map<String, dynamic>?) ?? {}).cast<String, String>();
   }
 
-  Future<void> saveCustomPitchTypeNames(
-      String userId, Map<String, String> names) async {
-    final prefs = await _prefs;
-    await prefs.setString(
-        '$_customPitchTypeNamesPrefix$userId', jsonEncode(names));
-  }
+  Future<void> saveCustomPitchTypeNames(String userId, Map<String, String> names) =>
+      _patchSettings(userId, 'customPitchTypeNames', names);
 
-  // ── CUSTOM PITCH TYPE COLORS (per user) ─────────────────
-  /// Pitch type key → color, stored as an 0xAARRGGBB hex string. This
-  /// exact color is then used everywhere that pitch type appears (button,
-  /// spray chart, pitch history, pitch breakdown, etc.) via
-  /// [AppColors.setCustomPitchColors]/[AppColors.pitchColor].
+  /// Pitch type key → color, as an 0xAARRGGBB int (jsonb-safe).
   Future<Map<String, int>> loadCustomPitchTypeColors(String userId) async {
-    final prefs = await _prefs;
-    final raw = prefs.getString('$_customPitchTypeColorsPrefix$userId');
-    if (raw == null) return {};
-    final map = jsonDecode(raw) as Map<String, dynamic>;
-    return map.map((k, v) => MapEntry(k, v as int));
+    final s = await _loadSettings(userId);
+    return ((s['customPitchTypeColors'] as Map<String, dynamic>?) ?? {})
+        .map((k, v) => MapEntry(k, v as int));
   }
 
-  Future<void> saveCustomPitchTypeColors(
-      String userId, Map<String, int> colors) async {
-    final prefs = await _prefs;
-    await prefs.setString(
-        '$_customPitchTypeColorsPrefix$userId', jsonEncode(colors));
-  }
-
-  /// Wipes everything — used only for testing / "reset app data".
-  Future<void> wipeAll() async {
-    final prefs = await _prefs;
-    await prefs.clear();
-  }
+  Future<void> saveCustomPitchTypeColors(String userId, Map<String, int> colors) =>
+      _patchSettings(userId, 'customPitchTypeColors', colors);
 }

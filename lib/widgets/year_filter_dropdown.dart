@@ -17,7 +17,7 @@ class YearFilterDropdown extends StatelessWidget {
     return SizedBox(
       width: 110,
       child: DropdownButtonFormField<int?>(
-        initialValue: session.selectedYear,
+        value: session.selectedYear,
         isDense: true,
         decoration: const InputDecoration(labelText: 'Year'),
         items: [
