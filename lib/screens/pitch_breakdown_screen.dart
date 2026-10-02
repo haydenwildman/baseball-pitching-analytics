@@ -294,7 +294,14 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                   const Text('Each box: stat value on top, pitches it\'s based on below. Rows = pitch, columns = stat — read across a row to see one pitch\'s full profile, or down a column to compare pitches on one stat. Hover a column name for what it means.',
                       style: TextStyle(fontSize: 11, color: AppColors.colMuted)),
                   const SizedBox(height: 8),
-                  Table(
+                  // 16 columns can't be read at phone width, so below a
+                  // minimum table width the table scrolls sideways
+                  // instead of squeezing every column to ~20px.
+                  LayoutBuilder(builder: (context, constraints) {
+                    const minTableWidth = 760.0;
+                    final tableWidth =
+                        constraints.maxWidth < minTableWidth ? minTableWidth : constraints.maxWidth;
+                    final table = Table(
                     border: TableBorder.all(color: AppColors.colBorder, width: 2),
                     defaultColumnWidth: const FlexColumnWidth(1),
                     columnWidths: const {0: FlexColumnWidth(0.9)},
@@ -341,7 +348,13 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                           for (final m in metrics) statBox(row, m),
                         ]),
                     ],
-                  ),
+                  );
+                    if (constraints.maxWidth >= minTableWidth) return table;
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(width: tableWidth, child: table),
+                    );
+                  }),
                 ],
               ),
             ),

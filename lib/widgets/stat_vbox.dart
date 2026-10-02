@@ -32,6 +32,7 @@ class StatVBox extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(label),
         content: Text(description ?? 'No description available.'),
         actions: [
@@ -180,6 +181,7 @@ class PerfStatBar extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(label),
         content: Text(description ?? 'No description available.'),
         actions: [

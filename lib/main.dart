@@ -7,7 +7,6 @@ import 'services/supabase_config.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_shell.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

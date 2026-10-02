@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../services/stats_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/stat_vbox.dart';
 import '../widgets/year_filter_dropdown.dart';
 import 'plus_lock_card.dart';
@@ -170,7 +171,7 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
       children: [
         filterRow,
         const SizedBox(height: 8),
-        Row(
+        ResponsiveRow(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(

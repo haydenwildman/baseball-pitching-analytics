@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../models/pitch_event.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/baseball_field_painter.dart';
 import '../services/batter_history_service.dart';
 import '../services/stats_service.dart' show perfHex, statProgressFraction;
@@ -222,9 +223,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
+          scrollable: true,
           title: const Text('Edit Current Game'),
           content: SizedBox(
-            width: 340,
+            width: Responsive.dialogWidth(ctx, 340),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -280,9 +282,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
+          scrollable: true,
           title: const Text('Start New Game'),
           content: SizedBox(
-            width: 340,
+            width: Responsive.dialogWidth(ctx, 340),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -532,9 +535,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
         }
 
         return AlertDialog(
+          scrollable: true,
           title: const Text('Add New Pitch Type'),
           content: SizedBox(
-            width: 340,
+            width: Responsive.dialogWidth(ctx, 340),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,9 +601,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
         return AlertDialog(
+          scrollable: true,
           title: Text('Color for ${session.pitchTypeLabel(key)}'),
           content: SizedBox(
-            width: 320,
+            width: Responsive.dialogWidth(ctx, 320),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -743,6 +748,31 @@ class _GameInputScreenState extends State<GameInputScreen> {
     return (game, matches.length);
   }
 
+  // ── Responsive sizing helpers (phone only; desktop values unchanged) ──
+
+  bool get _phone => Responsive.isPhone(context);
+
+  /// Usable width inside a stage card on a phone: screen width minus the
+  /// page padding, the card's own padding and its border.
+  double get _stageInnerWidth =>
+      MediaQuery.sizeOf(context).width - 2 * Responsive.pagePadding(context) - 2 * 16 - 3;
+
+  /// Tile width: the original fixed desktop width, or on phones an equal
+  /// share of the card ([phoneColumns] across) so tiles never overflow.
+  double _tileWidth(double desktop, {int phoneColumns = 1, double spacing = 10}) {
+    if (!_phone) return desktop;
+    return ((_stageInnerWidth - spacing * (phoneColumns - 1)) / phoneColumns).floorToDouble();
+  }
+
+  /// Text-field width for the batter-entry form: fixed on desktop, full
+  /// (or half) width on phones.
+  double _fieldWidth(double desktop, {bool half = false, double spacing = 14}) {
+    if (!_phone) return desktop;
+    return half ? ((_stageInnerWidth - spacing) / 2).floorToDouble() : _stageInnerWidth;
+  }
+
+  Widget _maybeExpanded(Widget w) => _phone ? Expanded(child: w) : w;
+
   // ── Reusable button widgets ──────────────────────────────────
 
   Widget _bigButton(
@@ -758,8 +788,8 @@ class _GameInputScreenState extends State<GameInputScreen> {
       onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        constraints: const BoxConstraints(minWidth: 132, minHeight: 60),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: BoxConstraints(minWidth: _phone ? 0 : 132, minHeight: 60),
+        padding: EdgeInsets.symmetric(horizontal: _phone ? 8 : 16, vertical: 12),
         decoration: BoxDecoration(
           color: selected ? AppColors.blueMid : (idleColor ?? AppColors.blueLight),
           borderRadius: BorderRadius.circular(12),
@@ -802,7 +832,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: 260,
+        width: _tileWidth(260),
         constraints: const BoxConstraints(minHeight: 60),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -860,7 +890,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: 230,
+        width: _tileWidth(230, phoneColumns: 2),
         constraints: const BoxConstraints(minHeight: 60),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
@@ -967,12 +997,14 @@ class _GameInputScreenState extends State<GameInputScreen> {
                     ),
                     const SizedBox(width: 4),
                   ],
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.colMuted,
-                          letterSpacing: 1)),
+                  Flexible(
+                    child: Text(title,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.colMuted,
+                            letterSpacing: 1)),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -1004,11 +1036,14 @@ class _GameInputScreenState extends State<GameInputScreen> {
       children: [
         Row(
           children: [
-            Text(session.currentUser?.pitcherDisplayName ?? '',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    color: AppColors.blueDark)),
+            Flexible(
+              child: Text(session.currentUser?.pitcherDisplayName ?? '',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.blueDark)),
+            ),
             const Spacer(),
             IconButton(
               tooltip: 'History',
@@ -1022,7 +1057,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
               onPressed: () => session.undoLastPitch(),
               icon: const Icon(Icons.undo, size: 16),
               label: const Text('Undo'),
-              style: OutlinedButton.styleFrom(foregroundColor: AppColors.perfBelowAvg),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.perfBelowAvg,
+                minimumSize: _phone ? const Size(0, 44) : null,
+              ),
             ),
           ],
         ),
@@ -1053,15 +1091,21 @@ class _GameInputScreenState extends State<GameInputScreen> {
                         backgroundColor: AppColors.blueMid,
                         labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
                       ),
-                      const Spacer(),
+                      if (!_phone) const Spacer(),
                       OutlinedButton.icon(
                         onPressed: _openEditGameDialog,
                         icon: const Icon(Icons.edit, size: 16),
                         label: const Text('Edit'),
+                        style: _phone
+                            ? OutlinedButton.styleFrom(minimumSize: const Size(0, 44))
+                            : null,
                       ),
                       ElevatedButton.icon(
                         onPressed: _openNewGameDialog,
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.perfExcellent),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.perfExcellent,
+                          minimumSize: _phone ? const Size(0, 44) : null,
+                        ),
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('New Game'),
                       ),
@@ -1073,14 +1117,14 @@ class _GameInputScreenState extends State<GameInputScreen> {
                     runSpacing: 10,
                     children: [
                       SizedBox(
-                        width: 200,
+                        width: _phone ? double.infinity : 200,
                         child: TextField(
                           controller: _opponentCtrl,
                           decoration: const InputDecoration(labelText: 'Team Name'),
                         ),
                       ),
                       SizedBox(
-                        width: 110,
+                        width: _phone ? ((MediaQuery.sizeOf(context).width - 2 * Responsive.pagePadding(context) - 2 * 12 - 3) - 10) / 2 : 110,
                         child: TextField(
                           controller: _gameNumCtrl,
                           keyboardType: TextInputType.number,
@@ -1088,7 +1132,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                         ),
                       ),
                       SizedBox(
-                        width: 100,
+                        width: _phone ? ((MediaQuery.sizeOf(context).width - 2 * Responsive.pagePadding(context) - 2 * 12 - 3) - 10) / 2 : 100,
                         child: DropdownButtonFormField<int>(
                           value: _selectedYear,
                           isDense: true,
@@ -1110,7 +1154,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
                               int.tryParse(_gameNumCtrl.text) ?? 1, _selectedYear);
                           setState(() => _stage = _Stage.newBatter);
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.perfExcellent),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.perfExcellent,
+                          minimumSize: _phone ? Size((MediaQuery.sizeOf(context).width - 2 * Responsive.pagePadding(context) - 2 * 12 - 3), 48) : null,
+                        ),
                         child: const Text('Confirm'),
                       ),
                     ],
@@ -1118,132 +1165,8 @@ class _GameInputScreenState extends State<GameInputScreen> {
           ),
         ),
 
-        // ── 2. Batter + count/outs — one compact horizontal row ────
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.blueDark,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Batter info
-              Expanded(
-                child: InkWell(
-                  onTap: session.currentOpponent.isEmpty ? null : _openBatterEntry,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              session.committedJersey != null
-                                  ? (session.batterNames[session.committedJersey!]?.isNotEmpty == true
-                                      ? session.batterNames[session.committedJersey!]!
-                                      : '#${session.committedJersey}')
-                                  : 'No batter set',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              'Order ${session.battingOrderSlot} · ${handFullNames[session.hand] ?? session.hand} · Faced ${session.completedPAs}${session.committedJersey != null ? "  ·  #${session.committedJersey}" : ""}',
-                              style: const TextStyle(color: Colors.white70, fontSize: 11),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.edit, size: 14, color: Colors.white54),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Count
-              Text('${session.balls}-${session.strikes}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2)),
-              const SizedBox(width: 14),
-              // Outs
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${session.outs} OUT${session.outs == 1 ? "" : "S"}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Tooltip(
-                        message: 'Decrease outs',
-                        child: InkWell(
-                          onTap: session.outs > 0
-                              ? () => session.setOuts(session.outs - 1)
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2),
-                            child: Icon(Icons.remove_circle_outline,
-                                size: 16,
-                                color: session.outs > 0 ? Colors.white70 : Colors.white24),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: List.generate(3, (i) {
-                          final filled = i < session.outs;
-                          return Container(
-                            margin: const EdgeInsets.only(left: 4),
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: filled ? AppColors.perfAverage : Colors.transparent,
-                              border: Border.all(color: Colors.white54, width: 2),
-                            ),
-                          );
-                        }),
-                      ),
-                      Tooltip(
-                        message: 'Increase outs',
-                        child: InkWell(
-                          onTap: session.outs < 3
-                              ? () => session.setOuts(session.outs + 1)
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 2, top: 2, bottom: 2, right: 2),
-                            child: Icon(Icons.add_circle_outline,
-                                size: 16,
-                                color: session.outs < 3 ? Colors.white70 : Colors.white24),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        // ── 2. Batter + count/outs ─────────────────────────────────
+        _buildBatterBar(session),
 
         // ── 3. Main content area — one stage at a time ─────────────
         _buildMainContent(session),
@@ -1254,6 +1177,156 @@ class _GameInputScreenState extends State<GameInputScreen> {
           _buildBatterHistorySection(session),
         ],
       ],
+    );
+  }
+
+  /// Batter + count + outs bar. Desktop keeps the original single-row
+  /// layout. On phones the count and outs are stacked in a right-hand
+  /// column so the batter's name and Order / Hand / Faced / Jersey line get
+  /// real room and are never truncated to a few characters.
+  Widget _buildBatterBar(AppSession session) {
+    final phone = _phone;
+    final hasBatter = session.committedJersey != null;
+    final batterName = hasBatter
+        ? (session.batterNames[session.committedJersey!]?.isNotEmpty == true
+            ? session.batterNames[session.committedJersey!]!
+            : '#${session.committedJersey}')
+        : 'No batter set';
+    final details =
+        'Order ${session.battingOrderSlot} · ${handFullNames[session.hand] ?? session.hand} · Faced ${session.completedPAs}${hasBatter ? "  ·  #${session.committedJersey}" : ""}';
+
+    final iconSize = phone ? 22.0 : 16.0;
+    final iconPad = phone ? 8.0 : 2.0;
+
+    final batterInfo = Expanded(
+      child: InkWell(
+        onTap: session.currentOpponent.isEmpty ? null : _openBatterEntry,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    batterName,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                    maxLines: phone ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    details,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    maxLines: phone ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.edit, size: 14, color: Colors.white54),
+          ],
+        ),
+      ),
+    );
+
+    final countText = Text('${session.balls}-${session.strikes}',
+        style: TextStyle(
+            color: Colors.white,
+            fontSize: phone ? 30 : 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2));
+
+    final outsControl = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${session.outs} OUT${session.outs == 1 ? "" : "S"}',
+          style: const TextStyle(
+              color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: 'Decrease outs',
+              child: InkWell(
+                onTap: session.outs > 0 ? () => session.setOuts(session.outs - 1) : null,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: EdgeInsets.all(iconPad),
+                  child: Icon(Icons.remove_circle_outline,
+                      size: iconSize,
+                      color: session.outs > 0 ? Colors.white70 : Colors.white24),
+                ),
+              ),
+            ),
+            Row(
+              children: List.generate(3, (i) {
+                final filled = i < session.outs;
+                return Container(
+                  margin: const EdgeInsets.only(left: 4),
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? AppColors.perfAverage : Colors.transparent,
+                    border: Border.all(color: Colors.white54, width: 2),
+                  ),
+                );
+              }),
+            ),
+            Tooltip(
+              message: 'Increase outs',
+              child: InkWell(
+                onTap: session.outs < 3 ? () => session.setOuts(session.outs + 1) : null,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: EdgeInsets.all(iconPad),
+                  child: Icon(Icons.add_circle_outline,
+                      size: iconSize,
+                      color: session.outs < 3 ? Colors.white70 : Colors.white24),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: phone ? 12 : 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.blueDark,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: phone
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                batterInfo,
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [countText, const SizedBox(height: 2), outsControl],
+                ),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                batterInfo,
+                const SizedBox(width: 14),
+                countText,
+                const SizedBox(width: 14),
+                outsControl,
+              ],
+            ),
     );
   }
 
@@ -1285,39 +1358,44 @@ class _GameInputScreenState extends State<GameInputScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            children: [
-              SizedBox(
-                width: 150,
-                child: TextField(
-                  controller: _jerseyCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  decoration: const InputDecoration(labelText: 'Jersey #'),
-                  autofocus: true,
-                ),
+          Builder(builder: (context) {
+            final jerseyField = SizedBox(
+              width: _fieldWidth(150, half: true),
+              child: TextField(
+                controller: _jerseyCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                decoration: const InputDecoration(labelText: 'Jersey #'),
+                autofocus: true,
               ),
-              SizedBox(
-                width: 220,
-                child: TextField(
-                  controller: _nameCtrl,
-                  style: const TextStyle(fontSize: 18),
-                  decoration: const InputDecoration(labelText: 'Batter Name (optional)'),
-                ),
+            );
+            final nameField = SizedBox(
+              width: _fieldWidth(220),
+              child: TextField(
+                controller: _nameCtrl,
+                style: const TextStyle(fontSize: 18),
+                decoration: const InputDecoration(labelText: 'Batter Name (optional)'),
               ),
-              SizedBox(
-                width: 150,
-                child: TextField(
-                  controller: _orderCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  decoration: const InputDecoration(labelText: 'Batting Order (1-9)'),
-                ),
+            );
+            final orderField = SizedBox(
+              width: _fieldWidth(150, half: true),
+              child: TextField(
+                controller: _orderCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                    labelText: _phone ? 'Order (1-9)' : 'Batting Order (1-9)'),
               ),
-            ],
-          ),
+            );
+            return Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              // Phone: Jersey # and Order side by side, name below.
+              children: _phone
+                  ? [jerseyField, orderField, nameField]
+                  : [jerseyField, nameField, orderField],
+            );
+          }),
           const SizedBox(height: 20),
           const Text('Bats',
               style: TextStyle(
@@ -1326,7 +1404,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
           Row(
             children: [
               for (final h in ['L', 'R', 'S'])
-                Padding(
+                _maybeExpanded(Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: _bigButton(
                     handFullNames[h]!,
@@ -1334,7 +1412,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                     onTap: () => session.setHand(h),
                     tooltip: handTooltips[h],
                   ),
-                ),
+                )),
             ],
           ),
           const SizedBox(height: 24),
@@ -1390,10 +1468,13 @@ class _GameInputScreenState extends State<GameInputScreen> {
                   tooltip: '${session.pitchTypeLabel(pt)} — press & hold for options',
                 ),
               ),
-              _bigButton(
-                'Add New Pitch',
-                onTap: _openAddPitchTypeDialog,
-                idleColor: Colors.white,
+              SizedBox(
+                width: _phone ? double.infinity : null,
+                child: _bigButton(
+                  'Add New Pitch',
+                  onTap: _openAddPitchTypeDialog,
+                  idleColor: Colors.white,
+                ),
               ),
             ],
           ),
@@ -1486,6 +1567,45 @@ class _GameInputScreenState extends State<GameInputScreen> {
   // ── Stage 3: Call ───────────────────────────────────────────
 
   Widget _erSelector() {
+    if (_phone) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('ER on this pitch', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(5, (n) {
+              final selected = _erValue == n;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: n < 4 ? 8 : 0),
+                  child: InkWell(
+                    onTap: () => setState(() => _erValue = n),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? AppColors.perfBelowAvg : AppColors.blueLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: selected ? AppColors.perfBelowAvg : AppColors.blueMid,
+                            width: 1.5),
+                      ),
+                      child: Text('$n',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: selected ? Colors.white : AppColors.colText)),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      );
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1661,8 +1781,11 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 'ld': 'Line Drive',
                 'fb': 'Fly Ball',
               }[b]!;
-              return _bigButton(label,
+              final btn = _bigButton(label,
                   selected: _battedType == b, onTap: () => setState(() => _battedType = b));
+              return _phone
+                  ? SizedBox(width: _tileWidth(132, phoneColumns: 3, spacing: 8), child: btn)
+                  : btn;
             }).toList(),
           ),
           const SizedBox(height: 14),

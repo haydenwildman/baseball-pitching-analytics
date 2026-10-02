@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/pitch_event.dart';
 import '../services/app_session.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 /// Direct CSV-style editor — port of the R app's "Edit Raw Data" DT table.
 /// Tap the pencil to edit a row in place, the trash icon to delete it, or
@@ -88,7 +89,7 @@ class _EditRawDataScreenState extends State<EditRawDataScreen> {
               ? (insertIndex != null ? 'Insert Row Here' : 'Add Row')
               : 'Edit Row'),
           content: SizedBox(
-            width: 480,
+            width: Responsive.dialogWidth(ctx, 480),
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 10,
@@ -207,7 +208,9 @@ class _EditRawDataScreenState extends State<EditRawDataScreen> {
             // ── Actions row — Add Row and Delete All live together here,
             // right above the table they act on, instead of Add Row being
             // stranded up in the title bar.
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ElevatedButton.icon(
                   onPressed: () => _openRowDialog(context),
@@ -215,13 +218,11 @@ class _EditRawDataScreenState extends State<EditRawDataScreen> {
                   label: const Text('Add Row (end)'),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.colSuccess),
                 ),
-                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => _openRowDialog(context, insertIndex: 0),
                   icon: const Icon(Icons.vertical_align_top, size: 16),
                   label: const Text('Insert at Top'),
                 ),
-                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: data.isEmpty ? null : () => _confirmDeleteAll(context),
                   icon: const Icon(Icons.delete_sweep_outlined, size: 16),

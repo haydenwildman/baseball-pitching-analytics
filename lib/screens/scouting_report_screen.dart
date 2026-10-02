@@ -7,6 +7,7 @@ import '../services/stats_service.dart';
 import '../services/scouting_report_data.dart';
 import '../services/scouting_pdf_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/stat_vbox.dart';
 import '../widgets/baseball_field_painter.dart';
 import '../widgets/year_filter_dropdown.dart';
@@ -197,7 +198,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
+                ResponsiveRow(stackedGap: 8, stackedCrossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
                     child: Text('Scouting: ${r.team.toUpperCase()}  •  $gamesFaced game(s) faced',
                         style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
@@ -228,7 +229,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                   ),
                 ]),
                 const SizedBox(height: 10),
-                Row(children: [
+                ResponsiveRow(stackedColumns: 3, children: [
                   Expanded(child: StatVBox(label: 'PA', value: '$pa', background: AppColors.blueLight)),
                   const SizedBox(width: 6),
                   Expanded(
@@ -266,7 +267,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                   Expanded(child: StatVBox(label: 'XBH', value: '$xbh', background: const Color(0xFFFEF2F2), textColor: AppColors.colError)),
                 ]),
                 const SizedBox(height: 10),
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ResponsiveRow(stackedGap: 8, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
                     child: _pillet(
                       'Strength',
@@ -309,7 +310,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
           ),
         ),
         // ── What Works / What Gets Hit ────────────────────────────
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ResponsiveRow(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: Card(
               child: Padding(
@@ -379,7 +380,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
           ),
         ]),
         // ── Their Approach / Attack Plan ──────────────────────────
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ResponsiveRow(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: Card(
               child: Padding(
@@ -464,7 +465,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
           ),
         ),
         // ── Spray chart + Adjustment Notes ────────────────────────
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ResponsiveRow(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: Card(
               child: Padding(
@@ -657,18 +658,17 @@ Widget _hitterCard(Map<String, dynamic> h) {
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(border: Border.all(color: AppColors.blueLight, width: 2), borderRadius: BorderRadius.circular(10)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        CircleAvatar(
-          backgroundColor: AppColors.blueDark,
-          child: Text('#${h['jersey']}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+      Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: CircleAvatar(
+            backgroundColor: AppColors.blueDark,
+            child: Text('#${h['jersey']}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
         ),
-        const SizedBox(width: 10),
         _miniStat('OBP', obp != null ? obp.toStringAsFixed(3) : '—', obpBg),
-        const SizedBox(width: 6),
         _miniStat('AVG', avg != null ? avg.toStringAsFixed(3) : '—', avgBg),
-        const SizedBox(width: 6),
         _miniStat('PA', '$pa', AppColors.blueLight),
-        const SizedBox(width: 6),
         _miniStat('XBH', '$xbh', const Color(0xFFFEF2F2)),
       ]),
       const SizedBox(height: 8),

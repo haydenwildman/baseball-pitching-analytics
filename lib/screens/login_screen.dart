@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import 'signup_screen.dart';
 import 'home_shell.dart';
 
@@ -56,12 +57,13 @@ class _LoginScreenState extends State<LoginScreen> {
             top: -80,
             child: Image.asset('assets/images/logo_watermark.png', width: 320),
           ),
-          Center(
+          SafeArea(child: Center(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Container(
             width: 400,
             margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(Responsive.isPhone(context) ? 20 : 32),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
@@ -105,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 TextField(
                   controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                       labelText: 'Email', hintText: 'you@example.com'),
                 ),
@@ -140,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ),
+      )),
         ],
       ),
     );

@@ -136,6 +136,11 @@ ThemeData buildAppTheme() {
       ),
       margin: const EdgeInsets.only(bottom: 12),
     ),
+    // Gives dialogs a little more room on phones; no visible change on
+    // desktop where dialogs are far narrower than the window.
+    dialogTheme: const DialogThemeData(
+      insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.blueDark,
       foregroundColor: Colors.white,

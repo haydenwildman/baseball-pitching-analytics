@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/baseball_field_painter.dart';
 
 /// Port of the R app's "Edit At-Bats" tab: pick a ball-in-play row from a
@@ -31,7 +32,7 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
       if (bipOutcomes.contains(session.pitches[i].outcome)) candidates.add(i);
     }
 
-    return Row(
+    return ResponsiveRow(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
@@ -45,7 +46,7 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                   const Text('Select At-Bat', style: TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 480,
+                    height: Responsive.isPhone(context) ? 280 : 480,
                     child: candidates.isEmpty
                         ? const Center(
                             child: Text('No balls-in-play logged yet.', style: TextStyle(color: Colors.grey)))

@@ -4,6 +4,7 @@ import '../models/user.dart';
 import '../services/app_session.dart';
 import '../services/billing_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -95,12 +96,13 @@ class _SignupScreenState extends State<SignupScreen> {
             top: -80,
             child: Image.asset('assets/images/logo_watermark.png', width: 320),
           ),
-          Center(
+          SafeArea(child: Center(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Container(
             width: 440,
             margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(Responsive.isPhone(context) ? 20 : 32),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
@@ -156,6 +158,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 10),
                 TextField(
                     controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                         labelText: 'Email', hintText: 'you@example.com')),
                 const SizedBox(height: 10),
@@ -207,7 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ),
-      ),
+      )),
         ],
       ),
     );

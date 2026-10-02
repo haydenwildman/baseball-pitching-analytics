@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../theme/app_theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/sidebar_nav.dart';
 import 'login_screen.dart';
 import 'game_input_screen.dart';
@@ -28,6 +29,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   String _selected = 'Game Input';
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _drawerOpenOnMobile = false;
   // Only meaningful for the wide/desktop layout — the mobile Drawer is
   // already inherently collapsible (open/close), so this only affects the
@@ -86,6 +88,8 @@ class _HomeShellState extends State<HomeShell> {
           _selected = label;
           _drawerOpenOnMobile = false;
         });
+        // On the slide-out (mobile) navigation, picking a page closes it.
+        if (isNarrow) _scaffoldKey.currentState?.closeDrawer();
       },
       isPlus: session.isPlus,
       isAdmin: session.isAdmin,
@@ -106,7 +110,10 @@ class _HomeShellState extends State<HomeShell> {
     );
 
     if (isNarrow) {
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      final pad = Responsive.pagePadding(context);
       return Scaffold(
+        key: _scaffoldKey,
         appBar: AppBar(
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -115,15 +122,28 @@ class _HomeShellState extends State<HomeShell> {
               const SizedBox(width: 8),
               Icon(_iconFor(_selected), size: 18, color: AppColors.blueDark),
               const SizedBox(width: 6),
-              Text(_selected, style: const TextStyle(fontWeight: FontWeight.w800)),
+              Flexible(
+                child: Text(_selected,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+              ),
             ],
           ),
+          // The explicit `leading` replaces Flutter's automatic menu
+          // button, so it must open the drawer itself.
           leading: IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () => setState(() => _drawerOpenOnMobile = true),
+            tooltip: 'Menu',
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
         ),
+        // Same sidebar widget as desktop, sized to its natural width
+        // (capped so it never covers the whole phone screen).
         drawer: Drawer(
+          width: screenWidth * 0.85 < SidebarNav.expandedWidth + 20
+              ? screenWidth * 0.85
+              : SidebarNav.expandedWidth + 20,
+          backgroundColor: AppColors.blueDark,
           child: sidebar,
         ),
         body: SafeArea(
@@ -135,7 +155,8 @@ class _HomeShellState extends State<HomeShell> {
                 child: Image.asset('assets/images/logo_watermark.png', width: 260),
               ),
               SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(pad),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 child: _buildBody(_selected),
               ),
             ],
