@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/stats_service.dart' show statProgressFraction;
+import 'stat_hold_info.dart';
 
 /// Port of the R app's `.stat-vbox` / `mk_vb()` helper: a colored box
 /// with a small uppercase label and a large bold value. If [description]
-/// is provided, a small "i" button appears in the corner that pops up
-/// an explanation of what the stat means.
+/// is provided, pressing and holding the box shows an explanation of what
+/// the stat means (released = dismissed); see [StatHoldInfo].
 class StatVBox extends StatelessWidget {
   final String label;
   final String value;
@@ -28,20 +29,6 @@ class StatVBox extends StatelessWidget {
     this.compact = false,
   });
 
-  void _showInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        scrollable: true,
-        title: Text(label),
-        content: Text(description ?? 'No description available.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it')),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final vPad = compact ? 5.0 : 8.0;
@@ -49,70 +36,41 @@ class StatVBox extends StatelessWidget {
     final labelSize = compact ? 8.5 : 10.0;
     final valueSize = compact ? 14.0 : 18.0;
     final gap = compact ? 1.0 : 3.0;
-    final infoSize = compact ? 14.0 : 18.0;
 
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: vPad, horizontal: hPad),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(compact ? 7 : 10),
-      ),
-      child: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  fontSize: labelSize,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                  color: textColor.withOpacity(0.85),
-                ),
-                textAlign: TextAlign.center,
+    return StatHoldInfo(
+      title: label,
+      description: description,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: vPad, horizontal: hPad),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(compact ? 7 : 10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: labelSize,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: textColor.withOpacity(0.85),
               ),
-              SizedBox(height: gap),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: valueSize,
-                  fontWeight: FontWeight.w900,
-                  color: textColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          if (description != null)
-            Positioned(
-              top: compact ? 1 : 3,
-              right: compact ? 1 : 3,
-              child: InkWell(
-                onTap: () => _showInfo(context),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: infoSize,
-                  height: infoSize,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: textColor.withOpacity(0.4)),
-                  ),
-                  child: Text(
-                    'i',
-                    style: TextStyle(
-                      fontSize: compact ? 9 : 11,
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                      color: AppColors.blueDark,
-                    ),
-                  ),
-                ),
-              ),
+              textAlign: TextAlign.center,
             ),
-        ],
+            SizedBox(height: gap),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: valueSize,
+                fontWeight: FontWeight.w900,
+                color: textColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -177,20 +135,6 @@ class PerfStatBar extends StatelessWidget {
     _TierTick(0.8, AppColors.perfExcellent),
   ];
 
-  void _showInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        scrollable: true,
-        title: Text(label),
-        content: Text(description ?? 'No description available.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it')),
-        ],
-      ),
-    );
-  }
-
   /// Text sitting on top of [bg] needs to be readable against it — white on
   /// the dark/saturated tier colors, dark text on the light ones.
   static Color _onBarTextColor(Color bg) {
@@ -214,7 +158,10 @@ class PerfStatBar extends StatelessWidget {
     // so the bar doubles as its own color key.
     final showKeyDots = statKey != null;
 
-    return Padding(
+    return StatHoldInfo(
+      title: label,
+      description: description,
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,29 +179,6 @@ class PerfStatBar extends StatelessWidget {
                   ),
                 ),
               ),
-              if (description != null)
-                InkWell(
-                  onTap: () => _showInfo(context),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.colMuted.withOpacity(0.5)),
-                    ),
-                    child: const Text(
-                      'i',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.blueDark,
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 5),
@@ -330,6 +254,7 @@ class PerfStatBar extends StatelessWidget {
             ),
           ],
         ],
+      ),
       ),
     );
   }

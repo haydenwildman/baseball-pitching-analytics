@@ -118,7 +118,7 @@ class _HomeShellState extends State<HomeShell> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/images/logo.png', height: 26),
+              Image.asset('assets/images/logo.png', height: 26, fit: BoxFit.contain, filterQuality: FilterQuality.high),
               const SizedBox(width: 8),
               Icon(_iconFor(_selected), size: 18, color: AppColors.blueDark),
               const SizedBox(width: 6),
@@ -181,7 +181,7 @@ class _HomeShellState extends State<HomeShell> {
                   ),
                   child: Row(
                     children: [
-                      Image.asset('assets/images/logo.png', height: 28),
+                      Image.asset('assets/images/logo.png', height: 28, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                       const SizedBox(width: 10),
                       Icon(_iconFor(_selected), size: 19, color: AppColors.blueDark),
                       const SizedBox(width: 8),

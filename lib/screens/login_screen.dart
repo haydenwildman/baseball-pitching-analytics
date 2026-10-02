@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('assets/images/logo.png', height: 64),
+                Image.asset('assets/images/logo.png', height: 64, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                 const SizedBox(height: 8),
                 const Text('Pitching Analytics',
                     style: TextStyle(

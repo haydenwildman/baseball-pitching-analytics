@@ -117,7 +117,7 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('assets/images/logo.png', height: 56),
+                Image.asset('assets/images/logo.png', height: 56, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                 const SizedBox(height: 8),
                 const Text('Create Account',
                     style: TextStyle(

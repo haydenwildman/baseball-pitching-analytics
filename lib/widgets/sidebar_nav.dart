@@ -76,7 +76,7 @@ class SidebarNav extends StatelessWidget {
               child: collapsed
                   ? Column(
                       children: [
-                        Image.asset('assets/images/logo.png', height: 32),
+                        Image.asset('assets/images/logo.png', height: 32, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                         const SizedBox(height: 8),
                         IconButton(
                           icon: const Icon(Icons.logout, color: Colors.white70, size: 18),
@@ -89,7 +89,7 @@ class SidebarNav extends StatelessWidget {
                     )
                   : Row(
                       children: [
-                        Image.asset('assets/images/logo.png', height: 40),
+                        Image.asset('assets/images/logo.png', height: 40, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
