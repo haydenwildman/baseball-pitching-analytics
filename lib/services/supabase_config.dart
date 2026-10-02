@@ -13,9 +13,9 @@ export 'package:supabase_flutter/supabase_flutter.dart';
 /// key bypasses RLS entirely and must only ever live inside the
 /// admin-users Edge Function, on Supabase's servers.
 /// ══════════════════════════════════════════════════════════════
-const supabaseUrl = 'https://xuqrmsjiftjwlhoqekpi.supabase.co';
+const supabaseUrl = 'https://xmzdwoqvnnwhbnntziuk.supabase.co';
 const supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1cXJtc2ppZnRqd2xob3Fla3BpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwODcyMTQsImV4cCI6MjEwNDY2MzIxNH0.VGM3pUe2i22wP9pAl74Tvz5nDKw7MLdm7GEQFZ91xDM';
+    'sb_publishable_MLI_UHma0Z_9kT8p0MReaQ_lVQ2h_zN';
 
 /// Call once at app startup, before runApp(). Sets up the singleton
 /// accessed everywhere else via `Supabase.instance.client`.
