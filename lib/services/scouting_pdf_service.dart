@@ -9,12 +9,12 @@ import 'scouting_report_data.dart';
 /// just re-expressed as PdfColor since the `pdf` package can't consume
 /// Flutter's `Color` directly.
 class _PdfColors {
-  static final blueDark = PdfColor.fromInt(0xFF1E3A8A);
-  static final blueMid = PdfColor.fromInt(0xFF3B82F6);
-  static final blueLight = PdfColor.fromInt(0xFFEFF6FF);
-  static final colText = PdfColor.fromInt(0xFF111827);
-  static final colMuted = PdfColor.fromInt(0xFF6B7280);
-  static final colBorder = PdfColor.fromInt(0xFFE5E7EB);
+  static final ink = PdfColor.fromInt(0xFF26201C);
+  static final accent = PdfColor.fromInt(0xFFC94F1B);
+  static final tint = PdfColor.fromInt(0xFFFDF1E4);
+  static final colText = PdfColor.fromInt(0xFF1C1917);
+  static final colMuted = PdfColor.fromInt(0xFF78716C);
+  static final colBorder = PdfColor.fromInt(0xFFE7DCCF);
   static final colSuccess = PdfColor.fromInt(0xFF22C55E);
   static final colError = PdfColor.fromInt(0xFFEF4444);
 
@@ -42,7 +42,7 @@ class ScoutingPdfService {
   }
 
   static PdfColor _perfHex(String stat, double? value) {
-    if (value == null) return _PdfColors.blueLight;
+    if (value == null) return _PdfColors.tint;
     // Mirrors StatsService.perfHex()'s tiering closely enough for the PDF's
     // purposes — pulls the same thresholds used across the app for the
     // stats that appear on the scouting report.
@@ -150,7 +150,7 @@ class ScoutingPdfService {
         pw.Expanded(
           child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
             pw.Text('Scouting Report: ${r.team.toUpperCase()}',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: _PdfColors.blueDark)),
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: _PdfColors.ink)),
             pw.Text('${r.gamesFaced} game(s) faced  •  Generated ${DateTime.now().toString().split('.').first}',
                 style: pw.TextStyle(fontSize: 9, color: _PdfColors.colMuted)),
           ]),
@@ -187,7 +187,7 @@ class ScoutingPdfService {
           ),
         );
     return pw.Row(children: [
-      statChip('PA', '${r.pa}', _PdfColors.blueLight),
+      statChip('PA', '${r.pa}', _PdfColors.tint),
       statChip('AVG', s.avg?.toStringAsFixed(3) ?? 'N/A', _perfHex('AVG', s.avg)),
       statChip('K%', s.kPct != null ? '${s.kPct}%' : 'N/A', _perfHex('K_pct', s.kPct)),
       statChip('BB%', s.bbPct != null ? '${s.bbPct}%' : 'N/A', _perfHex('BB_pct', s.bbPct)),
@@ -231,7 +231,7 @@ class ScoutingPdfService {
     return pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
       _pilletBox('STRENGTH', strength, _PdfColors.goodFill, _PdfColors.perfExcellent),
       _pilletBox('WEAKNESS', weakness, _PdfColors.badFill, _PdfColors.colError),
-      _pilletBox('QUICK PLAN', plan, _PdfColors.blueLight, _PdfColors.blueDark),
+      _pilletBox('QUICK PLAN', plan, _PdfColors.tint, _PdfColors.ink),
     ]);
   }
 
@@ -368,7 +368,7 @@ class ScoutingPdfService {
         child: pw.Row(children: [
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: pw.BoxDecoration(color: _PdfColors.blueMid, borderRadius: pw.BorderRadius.circular(8)),
+            decoration: pw.BoxDecoration(color: _PdfColors.accent, borderRadius: pw.BorderRadius.circular(8)),
             child: pw.Text((row['pitchType'] as String).toUpperCase(),
                 style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
           ),
@@ -392,7 +392,7 @@ class ScoutingPdfService {
             width: 16,
             height: 16,
             alignment: pw.Alignment.center,
-            decoration: pw.BoxDecoration(color: _PdfColors.blueDark, shape: pw.BoxShape.circle),
+            decoration: pw.BoxDecoration(color: _PdfColors.ink, shape: pw.BoxShape.circle),
             child: pw.Text('$n', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 8)),
           ),
           pw.SizedBox(width: 6),
@@ -434,7 +434,7 @@ class ScoutingPdfService {
       ]);
     }
     final rows = <pw.TableRow>[
-      pw.TableRow(decoration: pw.BoxDecoration(color: _PdfColors.blueDark), children: [
+      pw.TableRow(decoration: pw.BoxDecoration(color: _PdfColors.ink), children: [
         _hCell('#'), _hCell('PA'), _hCell('AVG'), _hCell('OBP'), _hCell('BB'), _hCell('K'), _hCell('XBH'),
       ]),
     ];
@@ -474,7 +474,7 @@ class ScoutingPdfService {
     return _sectionCard('Spray Chart vs This Team', [
       pw.Container(
         height: 190,
-        decoration: pw.BoxDecoration(color: _PdfColors.blueLight, borderRadius: pw.BorderRadius.circular(6)),
+        decoration: pw.BoxDecoration(color: _PdfColors.tint, borderRadius: pw.BorderRadius.circular(6)),
         child: pw.CustomPaint(
           size: const PdfPoint(240, 190),
           painter: (canvas, size) => _paintSprayField(canvas, size, points),
@@ -613,7 +613,7 @@ class ScoutingPdfService {
           style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: _PdfColors.colMuted)));
       children.add(pw.SizedBox(height: 3));
       final rows = <pw.TableRow>[
-        pw.TableRow(decoration: pw.BoxDecoration(color: _PdfColors.blueDark), children: [
+        pw.TableRow(decoration: pw.BoxDecoration(color: _PdfColors.ink), children: [
           _hCell('Game'), _hCell('AVG'), _hCell('K%'), _hCell('BB%'),
         ]),
       ];

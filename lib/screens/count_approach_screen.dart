@@ -81,7 +81,7 @@ class _CountApproachScreenState extends State<CountApproachScreen> {
               PerfStatBar(
                 label: 'PA',
                 value: '$pa',
-                color: AppColors.blueLight,
+                color: AppColors.tint,
                 description: _countInfo['PA'],
               ),
               PerfStatBar(
@@ -113,7 +113,7 @@ class _CountApproachScreenState extends State<CountApproachScreen> {
               PerfStatBar(
                 label: 'PA',
                 value: '$pa',
-                color: AppColors.blueLight,
+                color: AppColors.tint,
                 description: _countInfo['PA'],
               ),
               PerfStatBar(
@@ -194,7 +194,7 @@ class _CountApproachScreenState extends State<CountApproachScreen> {
                 PerfStatBar(
                   label: 'Plate Appearances',
                   value: '${cd['totalPA']}',
-                  color: AppColors.blueLight,
+                  color: AppColors.tint,
                   description: _countInfo['Plate Appearances'],
                 ),
                 PerfStatBar(

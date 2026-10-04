@@ -12,7 +12,7 @@ class PlusLockCard extends StatelessWidget {
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), AppColors.blueDark],
+          colors: [Color(0xFF14100D), AppColors.ink],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

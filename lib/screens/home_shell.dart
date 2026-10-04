@@ -120,7 +120,7 @@ class _HomeShellState extends State<HomeShell> {
             children: [
               Image.asset('assets/images/logo.png', height: 26, fit: BoxFit.contain, filterQuality: FilterQuality.high),
               const SizedBox(width: 8),
-              Icon(_iconFor(_selected), size: 18, color: AppColors.blueDark),
+              Icon(_iconFor(_selected), size: 18, color: AppColors.navIconOrange),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(_selected,
@@ -143,7 +143,7 @@ class _HomeShellState extends State<HomeShell> {
           width: screenWidth * 0.85 < SidebarNav.expandedWidth + 20
               ? screenWidth * 0.85
               : SidebarNav.expandedWidth + 20,
-          backgroundColor: AppColors.blueDark,
+          backgroundColor: AppColors.ink,
           child: sidebar,
         ),
         body: SafeArea(
@@ -183,7 +183,7 @@ class _HomeShellState extends State<HomeShell> {
                     children: [
                       Image.asset('assets/images/logo.png', height: 28, fit: BoxFit.contain, filterQuality: FilterQuality.high),
                       const SizedBox(width: 10),
-                      Icon(_iconFor(_selected), size: 19, color: AppColors.blueDark),
+                      Icon(_iconFor(_selected), size: 19, color: AppColors.ink),
                       const SizedBox(width: 8),
                       Text(
                         _selected,
@@ -191,7 +191,7 @@ class _HomeShellState extends State<HomeShell> {
                         style: const TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
-                            color: AppColors.blueDark),
+                            color: AppColors.ink),
                       ),
                     ],
                   ),

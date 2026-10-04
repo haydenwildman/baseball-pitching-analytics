@@ -182,7 +182,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                           ],
                           lineTouchData: LineTouchData(
                             touchTooltipData: LineTouchTooltipData(
-                              getTooltipColor: (_) => AppColors.blueDark,
+                              getTooltipColor: (_) => AppColors.ink,
                               tooltipRoundedRadius: 8,
                               tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
@@ -263,7 +263,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
     // real room to breathe; on wide screens keep the 3-across row.
     Widget chartsSection = LayoutBuilder(builder: (context, constraints) {
       final charts = [
-        lineCard('ERA by Game', 'era', AppColors.blueMid, 'ERA'),
+        lineCard('ERA by Game', 'era', AppColors.dataBlue, 'ERA'),
         lineCard('WHIP by Game', 'whip', AppColors.perfAverage, 'WHIP'),
         lineCard('K% by Game', 'kPct', AppColors.perfExcellent, 'K_pct'),
       ];
@@ -316,7 +316,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                     defaultColumnWidth: const IntrinsicColumnWidth(),
                     children: [
                       TableRow(
-                        decoration: const BoxDecoration(color: AppColors.blueDark),
+                        decoration: const BoxDecoration(color: AppColors.ink),
                         children: [
                           for (final entry in _gameLogColumns)
                             _HCell(entry.short, tooltip: entry.full),
@@ -447,7 +447,7 @@ class _GameLogColumnLegend extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.blueLight,
+        color: AppColors.tint,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Wrap(

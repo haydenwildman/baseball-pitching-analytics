@@ -190,4 +190,61 @@ void main() {
       });
     }
   });
+
+  // Regression: selecting a game used to turn the Game Input screen gray on
+  // desktop/tablet (>= 600px) because the confirmed-game header put a
+  // `Spacer` (an Expanded) directly inside a `Wrap`, which throws a
+  // ParentDataWidget error. Phones never built the Spacer, so they worked.
+  group('Game Input after a game is selected (tablet / desktop)', () {
+    for (final w in <double>[1440, 1280, 1024, 900, 768, 600, 430, 375]) {
+      testWidgets('game header and pitch logging render and respond at ${w.toInt()}px',
+          (tester) async {
+        final session = _session()..setGame('Lincoln', 1, 2026);
+        await _pump(
+          tester,
+          w,
+          const Scaffold(
+            body: SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: GameInputScreen(),
+            ),
+          ),
+          session: session,
+        );
+        expect(tester.takeException(), isNull);
+
+        // Header chips + buttons are actually on screen (not an ErrorWidget).
+        expect(find.text('vs Lincoln'), findsOneWidget);
+        expect(find.text('Game 1'), findsOneWidget);
+        expect(find.text('Edit'), findsOneWidget);
+        expect(find.text('New Game'), findsOneWidget);
+
+        // ...and the pitch-logging UI is interactive.
+        expect(find.text('Add New Pitch'), findsOneWidget);
+        await tester.ensureVisible(find.text('Add New Pitch'));
+        await tester.tap(find.text('Add New Pitch'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byType(AlertDialog), findsOneWidget);
+      });
+    }
+
+    testWidgets('selecting a game through the Confirm button works at 1280px', (tester) async {
+      await _pump(
+        tester,
+        1280,
+        const Scaffold(
+          body: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: GameInputScreen(),
+          ),
+        ),
+      );
+      await tester.enterText(find.widgetWithText(TextField, 'Team Name'), 'Lincoln');
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('vs Lincoln'), findsOneWidget);
+    });
+  });
 }

@@ -147,11 +147,11 @@ class _GameInputScreenState extends State<GameInputScreen> {
     'hbp': Icons.personal_injury_outlined,
   };
   static const Map<String, Color> callColor = {
-    'b': AppColors.blueMid,
+    'b': AppColors.dataBlue,
     'sl': AppColors.perfExcellent,
     'ss': AppColors.perfExcellent,
     'f': AppColors.perfAverage,
-    'ip': AppColors.blueDark,
+    'ip': AppColors.dataNavy,
     'hbp': AppColors.perfPoor,
   };
   static const Map<String, IconData> bipIcons = {
@@ -720,7 +720,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.blueLight,
+        color: AppColors.tint,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.colBorder),
       ),
@@ -791,10 +791,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
         constraints: BoxConstraints(minWidth: _phone ? 0 : 132, minHeight: 60),
         padding: EdgeInsets.symmetric(horizontal: _phone ? 8 : 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? AppColors.blueMid : (idleColor ?? AppColors.blueLight),
+          color: selected ? AppColors.brandOrangeDeep : (idleColor ?? AppColors.tint),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: selected ? AppColors.blueMid : AppColors.colBorder, width: 1.5),
+              color: selected ? AppColors.brandOrangeDeep : AppColors.colBorder, width: 1.5),
         ),
         alignment: Alignment.center,
         child: Text(
@@ -968,7 +968,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
     return _resultTile(
       icon: eventIcons[eventCode] ?? Icons.list_alt_outlined,
       label: eventActionLabels[eventCode] ?? eventCode.toUpperCase(),
-      color: AppColors.blueDark,
+      color: AppColors.dataNavy,
       onTap: onTap,
       tooltip: tooltip,
       subtitle: 'Game: $game • Total: $total',
@@ -992,7 +992,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                       borderRadius: BorderRadius.circular(16),
                       child: const Padding(
                         padding: EdgeInsets.all(4),
-                        child: Icon(Icons.arrow_back, size: 18, color: AppColors.blueDark),
+                        child: Icon(Icons.arrow_back, size: 18, color: AppColors.ink),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1015,6 +1015,82 @@ class _GameInputScreenState extends State<GameInputScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Header shown once a game is selected: opponent / game / season chips
+  /// plus the Edit and New Game buttons.
+  ///
+  /// NOTE: this used to be a single `Wrap` containing `if (!_phone) const
+  /// Spacer()`. `Spacer` is an `Expanded`, which is only valid directly
+  /// inside a `Row` / `Column` / `Flex`; a `Wrap` uses `WrapParentData`, so on
+  /// any non-phone width (>= 600px — i.e. desktop and tablet) building it
+  /// threw a ParentDataWidget / `FlexParentData` cast error and Flutter
+  /// replaced the whole Game Input screen with the gray error widget. Phones
+  /// skipped the `Spacer`, which is why they were unaffected. On wide screens
+  /// we now use a real `Row` so the buttons are still right-aligned.
+  Widget _buildConfirmedGameHeader(AppSession session) {
+    final chips = <Widget>[
+      Chip(
+        label: Text('vs ${session.currentOpponent}'),
+        backgroundColor: AppColors.perfExcellent,
+        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      ),
+      Chip(
+        label: Text('Game ${session.currentGameNumber}'),
+        backgroundColor: AppColors.ink,
+        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      ),
+      Chip(
+        label: Text('${session.currentSeason}'),
+        backgroundColor: AppColors.brandOrangeDeep,
+        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      ),
+    ];
+    final editButton = OutlinedButton.icon(
+      onPressed: _openEditGameDialog,
+      icon: const Icon(Icons.edit, size: 16),
+      label: const Text('Edit'),
+      style: _phone ? OutlinedButton.styleFrom(minimumSize: const Size(0, 44)) : null,
+    );
+    final newGameButton = ElevatedButton.icon(
+      onPressed: _openNewGameDialog,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.perfExcellent,
+        minimumSize: _phone ? const Size(0, 44) : null,
+      ),
+      icon: const Icon(Icons.add, size: 16),
+      label: const Text('New Game'),
+    );
+
+    if (_phone) {
+      // Phone layout (unchanged): everything wraps together.
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [...chips, editButton, newGameButton],
+      );
+    }
+
+    // Tablet / desktop: chips on the left (they wrap if the opponent name is
+    // long), buttons pinned to the right.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: chips,
+          ),
+        ),
+        const SizedBox(width: 8),
+        editButton,
+        const SizedBox(width: 8),
+        newGameButton,
+      ],
     );
   }
 
@@ -1042,7 +1118,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                   style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
-                      color: AppColors.blueDark)),
+                      color: AppColors.ink)),
             ),
             const Spacer(),
             IconButton(
@@ -1051,7 +1127,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 _stageBeforeHistory = _stage;
                 _stage = _Stage.history;
               }),
-              icon: const Icon(Icons.history, color: AppColors.blueDark),
+              icon: const Icon(Icons.history, color: AppColors.ink),
             ),
             OutlinedButton.icon(
               onPressed: () => session.undoLastPitch(),
@@ -1071,46 +1147,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: gameConfirmed
-                ? Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Chip(
-                        label: Text('vs ${session.currentOpponent}'),
-                        backgroundColor: AppColors.perfExcellent,
-                        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                      Chip(
-                        label: Text('Game ${session.currentGameNumber}'),
-                        backgroundColor: AppColors.blueDark,
-                        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                      Chip(
-                        label: Text('${session.currentSeason}'),
-                        backgroundColor: AppColors.blueMid,
-                        labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                      if (!_phone) const Spacer(),
-                      OutlinedButton.icon(
-                        onPressed: _openEditGameDialog,
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit'),
-                        style: _phone
-                            ? OutlinedButton.styleFrom(minimumSize: const Size(0, 44))
-                            : null,
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _openNewGameDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.perfExcellent,
-                          minimumSize: _phone ? const Size(0, 44) : null,
-                        ),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('New Game'),
-                      ),
-                    ],
-                  )
+                ? _buildConfirmedGameHeader(session)
                 : Wrap(
                     crossAxisAlignment: WrapCrossAlignment.end,
                     spacing: 10,
@@ -1301,7 +1338,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.symmetric(horizontal: phone ? 12 : 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.blueDark,
+        color: AppColors.ink,
         borderRadius: BorderRadius.circular(10),
       ),
       child: phone
@@ -1586,10 +1623,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
                       height: 44,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.perfBelowAvg : AppColors.blueLight,
+                        color: selected ? AppColors.perfBelowAvg : AppColors.tint,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: selected ? AppColors.perfBelowAvg : AppColors.blueMid,
+                            color: selected ? AppColors.perfBelowAvg : AppColors.brandOrangeDeep,
                             width: 1.5),
                       ),
                       child: Text('$n',
@@ -1624,10 +1661,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 height: 30,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.perfBelowAvg : AppColors.blueLight,
+                  color: selected ? AppColors.perfBelowAvg : AppColors.tint,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: selected ? AppColors.perfBelowAvg : AppColors.blueMid, width: 1.5),
+                      color: selected ? AppColors.perfBelowAvg : AppColors.brandOrangeDeep, width: 1.5),
                 ),
                 child: Text('$n',
                     style: TextStyle(
@@ -1663,7 +1700,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
               return _resultTile(
                 icon: callIcons[code] ?? Icons.sports_baseball_outlined,
                 label: label,
-                color: callColor[code] ?? AppColors.blueMid,
+                color: callColor[code] ?? AppColors.dataBlue,
                 tooltip: callTooltips[code],
                 onTap: () {
                   if (code == 'ip') {
@@ -1859,7 +1896,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
   /// situation, what did I throw, what happened, where was it hit").
   Widget _mostRecentPitchCard(AppSession session, PitchEvent p, (String, String)? countPair) {
     final isPitch = p.eventType == 'pitch';
-    final color = isPitch ? AppColors.pitchColor(p.pitchType) : AppColors.blueDark;
+    final color = isPitch ? AppColors.pitchColor(p.pitchType) : AppColors.dataNavy;
     final resultLabel = isPitch
         ? (outcomeFullNames[p.outcome] ?? callFullNames[p.call] ?? (p.outcome ?? p.call ?? ''))
         : (eventTypeFullNames[p.eventType] ?? p.eventType.toUpperCase());
@@ -1878,7 +1915,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
           const SizedBox(height: 6),
           if (p.batterNumber != null)
             Text('#${p.batterNumber} — ${session.batterNames[p.batterNumber] ?? 'Unknown'}',
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.blueDark)),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.ink)),
           if (p.batterNumber != null) ...[
             const SizedBox(height: 2),
             Text(
@@ -1896,7 +1933,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
             Text(_pitchTypeLabel(p.pitchType),
                 style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: color)),
           Text(resultLabel.toUpperCase(),
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.blueDark)),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink)),
           if (p.battedType != null) ...[
             const SizedBox(height: 4),
             Text(battedTypeFullNames[p.battedType] ?? p.battedType!,
@@ -1922,7 +1959,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
   Widget _pill(String text) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.colBorder)),
-        child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.blueDark)),
+        child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.ink)),
       );
 
   String _ordinal(int n) {
@@ -1960,7 +1997,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.blueLight,
+        color: AppColors.tint,
         borderRadius: BorderRadius.circular(8),
         border: Border(left: BorderSide(color: color, width: 3)),
       ),
@@ -1968,7 +2005,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
         children: [
           Expanded(
             child: Text(parts.join('  —  '),
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.blueDark),
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.ink),
                 overflow: TextOverflow.ellipsis),
           ),
           if (p.inning != null)
@@ -2057,7 +2094,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                     text: batterName != null && batterName.isNotEmpty
                         ? '#$jersey $batterName'
                         : '#$jersey',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.blueDark),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
                   ),
                   if (session.hand.isNotEmpty) ...[
                     const TextSpan(text: '   |   ', style: TextStyle(color: AppColors.colBorder, fontWeight: FontWeight.w900)),
@@ -2190,7 +2227,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.blueLight,
+          color: AppColors.tint,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -2201,7 +2238,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
             const SizedBox(height: 4),
             Text('${history.atBats.length}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.blueDark)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.ink)),
             const Text('at-bats · tap to view',
                 style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.colMuted)),
           ],
@@ -2264,7 +2301,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
   Widget _miniStatCell(String label, String display, double? rawValue, String? statKey) {
     final hasValue = display != 'N/A';
     final graded = statKey != null && rawValue != null;
-    final barColor = graded ? perfHex(statKey, rawValue) : AppColors.blueMid.withOpacity(0.35);
+    final barColor = graded ? perfHex(statKey, rawValue) : AppColors.brandOrangeDeep.withOpacity(0.35);
     final frac = graded ? statProgressFraction(statKey, rawValue) : 0.0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -2310,7 +2347,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.blueLight,
+        color: AppColors.tint,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -2327,7 +2364,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
               if (ab.finalOutcome != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.blueDark, borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(6)),
                   child: Text(
                     outcomeFullNames[ab.finalOutcome] ?? ab.finalOutcome!.toUpperCase(),
                     style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
@@ -2360,7 +2397,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                       outcomeFullNames[ab.pitches[i].outcome] ??
                           callFullNames[ab.pitches[i].call] ??
                           (ab.pitches[i].outcome ?? ab.pitches[i].call ?? ''),
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.blueDark),
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -2426,7 +2463,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
   Widget _tendencyStat(String label, String value) => RichText(
         text: TextSpan(
           children: [
-            TextSpan(text: '$value ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.blueDark)),
+            TextSpan(text: '$value ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.ink)),
             TextSpan(text: label, style: const TextStyle(fontSize: 10.5, color: AppColors.colMuted)),
           ],
         ),
@@ -2480,7 +2517,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                   children: [
                     Expanded(
                       child: Text('Previous Sequences — ${history.opponent} #${history.jersey}',
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.blueDark)),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink)),
                     ),
                     IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
                   ],
@@ -2545,7 +2582,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
                       outcomeFullNames[ab.pitches[i].outcome] ??
                           callFullNames[ab.pitches[i].call] ??
                           (ab.pitches[i].outcome ?? ab.pitches[i].call ?? ''),
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.blueDark),
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

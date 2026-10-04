@@ -57,10 +57,10 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           border: Border.all(
-              color: selected ? AppColors.blueDark : AppColors.colBorder,
+              color: selected ? AppColors.ink : AppColors.colBorder,
               width: 2),
           borderRadius: BorderRadius.circular(10),
-          color: selected ? AppColors.blueLight : Colors.white,
+          color: selected ? AppColors.tint : Colors.white,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +69,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
-                    color: AppColors.blueDark)),
+                    color: AppColors.ink)),
             const SizedBox(height: 2),
             Text(price, style: const TextStyle(fontSize: 13, color: Colors.grey)),
             const SizedBox(height: 6),
@@ -83,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blueDark,
+      backgroundColor: AppColors.ink,
       body: Stack(
         children: [
           Positioned(
@@ -123,7 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.blueDark)),
+                        color: AppColors.ink)),
                 const SizedBox(height: 4),
                 const Text('Pitching Analytics — Start for free',
                     style: TextStyle(color: Colors.grey, fontSize: 13)),

@@ -136,7 +136,7 @@ class _StatInfoPopup extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.blueMid.withOpacity(0.5)),
+                border: Border.all(color: AppColors.brandOrangeDeep.withOpacity(0.5)),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x33000000),
@@ -158,7 +158,7 @@ class _StatInfoPopup extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.blueDark,
+                          color: AppColors.ink,
                         ),
                       ),
                       const SizedBox(height: 4),

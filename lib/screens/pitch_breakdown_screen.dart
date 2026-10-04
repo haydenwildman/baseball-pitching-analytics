@@ -265,7 +265,7 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
           Widget statBox(Map<String, dynamic> row, _MetricRow m) {
             final value = row[m.valueKey] as double?;
             final n = row[m.nKey] as int?;
-            final bg = m.tier != null ? perfHex(m.tier!, value) : AppColors.blueLight;
+            final bg = m.tier != null ? perfHex(m.tier!, value) : AppColors.tint;
             final tc = textColorForCell(bg);
             final valueText = value == null
                 ? 'N/A'
@@ -307,7 +307,7 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                     columnWidths: const {0: FlexColumnWidth(0.9)},
                     children: [
                       TableRow(
-                        decoration: const BoxDecoration(color: AppColors.blueDark),
+                        decoration: const BoxDecoration(color: AppColors.ink),
                         children: [
                           const Padding(
                             padding: EdgeInsets.all(6),
@@ -328,7 +328,7 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                       if (overall != null)
                         TableRow(children: [
                           Container(
-                            color: AppColors.blueMid,
+                            color: AppColors.brandOrangeDeep,
                             padding: const EdgeInsets.all(6),
                             alignment: Alignment.center,
                             child: const Text('OVERALL',

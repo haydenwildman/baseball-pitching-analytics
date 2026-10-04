@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blueDark,
+      backgroundColor: AppColors.ink,
       body: Stack(
         children: [
           // Large faint watermark logo behind everything, matching the
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.blueDark)),
+                        color: AppColors.ink)),
                 const SizedBox(height: 4),
                 const Text('Sign in to your account',
                     style: TextStyle(color: Colors.grey, fontSize: 13)),

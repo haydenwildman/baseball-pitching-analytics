@@ -355,7 +355,7 @@ class _PitchUsageHeatmap extends StatelessWidget {
         return Container(
           height: 56,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), border: Border.all(color: AppColors.colBorder, width: 2)),
+          decoration: BoxDecoration(color: AppColors.surfaceAlt, border: Border.all(color: AppColors.colBorder, width: 2)),
           child: const Text('—', style: TextStyle(color: Colors.grey, fontSize: 11)),
         );
       }
@@ -401,7 +401,7 @@ class _PitchUsageHeatmap extends StatelessWidget {
         border: TableBorder.all(color: AppColors.colBorder, width: 2),
         children: [
           TableRow(
-            decoration: const BoxDecoration(color: AppColors.blueDark),
+            decoration: const BoxDecoration(color: AppColors.ink),
             children: [
               const Padding(
                 padding: EdgeInsets.all(4),
@@ -423,7 +423,7 @@ class _PitchUsageHeatmap extends StatelessWidget {
               Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.surfaceAlt,
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Container(width: 7, height: 7, decoration: BoxDecoration(color: AppColors.pitchColor(pt), shape: BoxShape.circle)),
                   const SizedBox(height: 2),

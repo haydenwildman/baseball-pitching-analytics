@@ -66,7 +66,7 @@ class SidebarNav extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeInOut,
       width: collapsed ? collapsedWidth : expandedWidth,
-      color: AppColors.blueDark,
+      color: AppColors.ink,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,11 +244,11 @@ class SidebarNav extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 11, horizontal: collapsed ? 0 : 18),
         alignment: collapsed ? Alignment.center : null,
         decoration: BoxDecoration(
-          color: active ? AppColors.blueMid.withOpacity(0.22) : null,
+          color: active ? AppColors.brandOrange.withOpacity(0.22) : null,
           border: Border(
             left: BorderSide(
               width: 3,
-              color: active ? AppColors.blueMid : Colors.transparent,
+              color: active ? AppColors.brandOrange : Colors.transparent,
             ),
           ),
         ),

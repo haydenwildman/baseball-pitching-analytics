@@ -209,13 +209,13 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                         ? const SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blueDark),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink),
                           )
                         : const Icon(Icons.picture_as_pdf, size: 16),
                     label: Text(_exporting ? 'Generating…' : 'Download PDF'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.blueDark,
-                      side: const BorderSide(color: AppColors.blueDark, width: 1.5),
+                      foregroundColor: AppColors.ink,
+                      side: const BorderSide(color: AppColors.ink, width: 1.5),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
@@ -230,7 +230,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                 ]),
                 const SizedBox(height: 10),
                 ResponsiveRow(stackedColumns: 3, children: [
-                  Expanded(child: StatVBox(label: 'PA', value: '$pa', background: AppColors.blueLight)),
+                  Expanded(child: StatVBox(label: 'PA', value: '$pa', background: AppColors.tint)),
                   const SizedBox(width: 6),
                   Expanded(
                       child: StatVBox(
@@ -300,8 +300,8 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                           : (threatLevel == 'medium'
                               ? 'Limit XBH. Mix speeds. Trust your sequencing.'
                               : 'Cruise mode. Throw strikes. Finish ABs efficiently.'),
-                      AppColors.blueLight,
-                      AppColors.blueDark,
+                      AppColors.tint,
+                      AppColors.ink,
                     ),
                   ),
                 ]),
@@ -549,7 +549,7 @@ class _ScoutingReportBodyState extends State<_ScoutingReportBody> {
                       Table(
                         border: TableBorder.all(color: AppColors.colBorder),
                         children: [
-                          TableRow(decoration: const BoxDecoration(color: AppColors.blueDark), children: [
+                          TableRow(decoration: const BoxDecoration(color: AppColors.ink), children: [
                             _hc('Game'), _hc('AVG'), _hc('K%'), _hc('BB%'),
                           ]),
                           for (final g in gameTrend)
@@ -622,7 +622,7 @@ Widget _step(int n, String text) => Padding(
           width: 22,
           height: 22,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: AppColors.blueDark, shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: AppColors.ink, shape: BoxShape.circle),
           child: Text('$n', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
         ),
         const SizedBox(width: 10),
@@ -656,26 +656,26 @@ Widget _hitterCard(Map<String, dynamic> h) {
   return Container(
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(border: Border.all(color: AppColors.blueLight, width: 2), borderRadius: BorderRadius.circular(10)),
+    decoration: BoxDecoration(border: Border.all(color: AppColors.tint, width: 2), borderRadius: BorderRadius.circular(10)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
         Padding(
           padding: const EdgeInsets.only(right: 4),
           child: CircleAvatar(
-            backgroundColor: AppColors.blueDark,
+            backgroundColor: AppColors.ink,
             child: Text('#${h['jersey']}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
           ),
         ),
         _miniStat('OBP', obp != null ? obp.toStringAsFixed(3) : '—', obpBg),
         _miniStat('AVG', avg != null ? avg.toStringAsFixed(3) : '—', avgBg),
-        _miniStat('PA', '$pa', AppColors.blueLight),
+        _miniStat('PA', '$pa', AppColors.tint),
         _miniStat('XBH', '$xbh', const Color(0xFFFEF2F2)),
       ]),
       const SizedBox(height: 8),
       Wrap(spacing: 8, runSpacing: 6, children: [
         _tagBox('Strength', strength, const Color(0xFFFEF2F2), AppColors.colError),
         _tagBox('Exploit', weakness, const Color(0xFFF0FDF4), AppColors.perfExcellent),
-        _tagBox('Plan', plan, AppColors.blueLight, AppColors.blueDark),
+        _tagBox('Plan', plan, AppColors.tint, AppColors.ink),
       ]),
     ]),
   );

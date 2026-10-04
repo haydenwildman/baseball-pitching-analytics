@@ -23,7 +23,7 @@ class StatVBox extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    this.background = AppColors.blueLight,
+    this.background = AppColors.tint,
     this.textColor = AppColors.colText,
     this.description,
     this.compact = false,
@@ -141,7 +141,7 @@ class PerfStatBar extends StatelessWidget {
     if (bg == AppColors.perfExcellent ||
         bg == AppColors.perfPoor ||
         bg == AppColors.perfBelowAvg ||
-        bg == AppColors.blueMid) {
+        bg == AppColors.brandOrangeDeep) {
       return Colors.white;
     }
     return AppColors.colText;
@@ -150,9 +150,9 @@ class PerfStatBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frac = _fraction;
-    // Plain/unrated counts (PA, IP, ...) use blueLight fill — render the
-    // bar itself in the stronger blueMid so it's visible against the track.
-    final barColor = color == AppColors.blueLight ? AppColors.blueMid : color;
+    // Plain/unrated counts (PA, IP, ...) use the neutral tint fill — render the
+    // bar itself in the stronger brand orange so it's visible against the track.
+    final barColor = color == AppColors.tint ? AppColors.brandOrangeDeep : color;
     final onBarColor = _onBarTextColor(barColor);
     // Graded stats only: small dots marking where each next tier begins,
     // so the bar doubles as its own color key.

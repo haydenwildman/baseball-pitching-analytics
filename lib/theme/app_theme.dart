@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Colors ported 1:1 from the R Shiny app's PERF_COLORS / UI_BLUE_* / pitch & spray palettes.
-/// Keeping these exact hex values is what makes the Flutter app "look like" the Shiny app.
+/// The app's colors, split into two deliberately separate groups:
+///
+///  1. THEME / UI colors (brand orange, ink, surfaces, text, borders) —
+///     page backgrounds, sidebar, app bar, buttons, table headers, etc.
+///     Restyle these freely.
+///  2. DATA colors (perf tiers, pitch types, spray outcomes, call/event
+///     colors, [dataBlue]/[dataNavy]) — ported 1:1 from the R Shiny app's
+///     PERF_COLORS / pitch & spray palettes. These must NEVER change just
+///     because the UI theme does; the exact hex values are what make the
+///     charts read the same as the Shiny app.
 class AppColors {
   // Performance tiers (used to color-code stat boxes / tables)
   static const Color perfExcellent = Color(0xFF15803D);
@@ -10,19 +18,46 @@ class AppColors {
   static const Color perfBelowAvg = Color(0xFFFB923C);
   static const Color perfPoor = Color(0xFFDC2626);
 
-  // Brand blues
-  static const Color blueDark = Color(0xFF1E3A8A);
-  static const Color blueMid = Color(0xFF3B82F6);
-  static const Color blueLight = Color(0xFFEFF6FF);
+  // ── THEME / UI colors ────────────────────────────────────────
+  // Brand palette (from the orange logo). Orange is an accent; the
+  // chrome (sidebar, app bar, headers) is a warm near-black "ink" taken
+  // from the logo's black outline so the orange pops instead of flooding.
+  static const Color brandOrange = Color(0xFFED652A); // primary accent
+  static const Color brandOrangeMid = Color(0xFFEF874B);
+  static const Color brandOrangeSoft = Color(0xFFF2AD77);
+  static const Color brandPeach = Color(0xFFF8D3AB);
+  static const Color brandCream = Color(0xFFFFFBDF);
+
+  /// Darker shade of [brandOrange] for filled buttons / selected fills that
+  /// carry white text (white on [brandOrange] is only ~3.5:1; this is ~4.6:1).
+  static const Color brandOrangeDeep = Color(0xFFC94F1B);
+
+  /// Dark chrome: sidebar, app bar, login background, table header rows,
+  /// and strong headings.
+  static const Color ink = Color(0xFF26201C);
+
+  /// Page background (a light tint of [brandCream]) and soft neutral fills
+  /// for stat boxes / tiles that sit on white cards.
+  static const Color pageBg = Color(0xFFFFFDF3);
+  static const Color tint = Color(0xFFFDF1E4);
+  static const Color surfaceAlt = Color(0xFFFBF7F0);
+
+  // ── DATA colors: do not restyle with the theme ───────────────────
+  // These two blues are NOT UI colors. They encode data: ball calls
+  // ('b'), balls in play ('ip') and non-pitch events in the Game Input
+  // call/event system, and the ERA line on Game Logs. Values are
+  // identical to the old blueMid / blueDark.
+  static const Color dataBlue = Color(0xFF3B82F6);
+  static const Color dataNavy = Color(0xFF1E3A8A);
 
   // Single orange used for every main-navigation icon, so the sidebar
   // reads as one consistent accent color rather than a rotating palette.
-  static const Color navIconOrange = Color(0xFFF97316);
+  static const Color navIconOrange = brandOrangeMid;
 
   // Text / borders
-  static const Color colText = Color(0xFF111827);
-  static const Color colMuted = Color(0xFF6B7280);
-  static const Color colBorder = Color(0xFFE5E7EB);
+  static const Color colText = Color(0xFF1C1917);
+  static const Color colMuted = Color(0xFF78716C);
+  static const Color colBorder = Color(0xFFE7DCCF);
   static const Color colSuccess = Color(0xFF22C55E);
   static const Color colError = Color(0xFFEF4444);
 
@@ -116,16 +151,16 @@ class AppColors {
   }
 }
 
-/// The app's ThemeData — deliberately close to the Shiny bslib defaults
-/// (white cards, blue-dark headers, rounded corners).
+/// The app's ThemeData — white cards on a warm cream page, dark "ink"
+/// chrome and brand-orange accents.
 ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
-    scaffoldBackgroundColor: Colors.white,
+    scaffoldBackgroundColor: AppColors.pageBg,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.blueDark,
-      primary: AppColors.blueDark,
-      secondary: AppColors.blueMid,
+      seedColor: AppColors.brandOrange,
+      primary: AppColors.brandOrangeDeep,
+      secondary: AppColors.brandOrange,
     ),
     fontFamily: 'Roboto',
     cardTheme: CardThemeData(
@@ -142,14 +177,14 @@ ThemeData buildAppTheme() {
       insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.blueDark,
+      backgroundColor: AppColors.ink,
       foregroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.blueDark,
+        backgroundColor: AppColors.brandOrangeDeep,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -169,17 +204,17 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.blueMid, width: 2),
+        borderSide: const BorderSide(color: AppColors.brandOrange, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     ),
     // Applies to every hover/long-press tooltip in the app — plain Tooltip
     // widgets AND the `tooltip:` shorthand on IconButton etc. — so every
-    // popup shares the same brand-blue background with guaranteed-readable
+    // popup shares the same dark ink background with guaranteed-readable
     // white text, regardless of what's behind it.
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: AppColors.blueDark.withOpacity(0.96),
+        color: AppColors.ink.withOpacity(0.96),
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2)),

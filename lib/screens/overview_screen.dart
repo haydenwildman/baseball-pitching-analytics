@@ -142,7 +142,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    bar('IP', stats.ipDisplay, AppColors.blueLight),
+                    bar('IP', stats.ipDisplay, AppColors.tint),
                     bar('ERA', stats.era?.toStringAsFixed(2) ?? 'N/A', perfHex('ERA', stats.era), 'ERA', stats.era),
                     bar('WHIP', stats.whip?.toStringAsFixed(3) ?? 'N/A', perfHex('WHIP', stats.whip), 'WHIP', stats.whip),
                     bar('AVG Against', stats.avg?.toStringAsFixed(3) ?? 'N/A', perfHex('AVG', stats.avg), 'AVG', stats.avg),

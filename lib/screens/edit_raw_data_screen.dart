@@ -238,7 +238,7 @@ class _EditRawDataScreenState extends State<EditRawDataScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(AppColors.blueDark),
+                  headingRowColor: MaterialStateProperty.all(AppColors.ink),
                   headingTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                   columns: const [
                     DataColumn(label: Text('Year')),

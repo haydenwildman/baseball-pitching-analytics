@@ -68,7 +68,7 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                                   margin: const EdgeInsets.only(bottom: 6),
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: selected ? AppColors.blueDark : Colors.white,
+                                    color: selected ? AppColors.ink : Colors.white,
                                     border: Border.all(color: AppColors.colBorder, width: 2),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
