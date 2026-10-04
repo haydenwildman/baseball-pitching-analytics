@@ -100,10 +100,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     SizedBox(
                       width: 180,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: _team,
                         decoration: const InputDecoration(labelText: 'Team'),
                         items: teams
-                            .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                            .map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (v) => setState(() {
                           _team = v!;
@@ -114,10 +115,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     SizedBox(
                       width: 140,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: _gameNum,
                         decoration: const InputDecoration(labelText: 'Game #'),
                         items: gameNums
-                            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                            .map((g) => DropdownMenuItem(value: g, child: Text(g, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (v) => setState(() => _gameNum = v!),
                       ),

@@ -143,12 +143,21 @@ class AppSession extends ChangeNotifier {
     'k', 'kl', 'dk',
   };
 
-  /// Standard lineup length. Defaults to 9 — the order wraps back to spot 1
-  /// automatically once it passes this. If the person manually jumps the
-  /// batting order back to spot 1 before reaching 9 (e.g. this team only
-  /// bats 8), [updateBattingOrderSlot] infers the shorter lineup and this
-  /// drops to match, so the wrap keeps happening at the right spot from
-  /// then on.
+  /// Value of [lineupSize] meaning "this lineup is longer than the standard 9
+  /// and its length isn't known yet" — the order just keeps counting up
+  /// (10, 11, 12, ...) until the person enters spot 1 again.
+  static const int openLineup = 99;
+
+  /// Lineup length: the batting order wraps back to spot 1 automatically
+  /// once it reaches this. Starts at the standard 9 and is learned from how
+  /// the lineup is actually entered:
+  ///  * entering a spot above the current size (e.g. 10) means the lineup is
+  ///    longer than assumed, so the size becomes [openLineup] — the order
+  ///    keeps incrementing normally;
+  ///  * entering spot 1 while a higher spot was due next means the lineup has
+  ///    wrapped, and the size becomes the highest spot used (8, 13, ...), so
+  ///    every later cycle wraps there on its own.
+  /// See [updateBattingOrderSlot].
   int lineupSize = 9;
 
   /// Jersey # → player name, for display/edit purposes only (never used in
@@ -361,6 +370,7 @@ class AppSession extends ChangeNotifier {
         _abEndingOutcomes.contains(lastPitchRow.outcome);
     completedPAs =
         lastPaEnded ? lastPitchRow.batter + 1 : lastPitchRow.batter;
+    lineupSize = _inferLineupSize();
   }
 
   /// Known opponent names logged so far (for the dropdown), mirrors
@@ -458,16 +468,63 @@ class AppSession extends ChangeNotifier {
   /// after the lineup locks — same as [updateCommittedJersey] does for the
   /// jersey #. No Submit step, never touches the PA counter.
   ///
-  /// If the person jumps the order back down to spot 1 before naturally
-  /// reaching [lineupSize] (default 9), that's a signal this lineup is
-  /// actually shorter than assumed (e.g. only 8 hitters) — so the wrap
-  /// point shrinks to match, and every future at-bat wraps there instead.
+  /// Lineup-cycle rules (see [lineupSize]):
+  ///  * **1 starts a new cycle.** If the order was about to continue at spot
+  ///    N > 1 and the person enters 1, the lineup has wrapped: its length is
+  ///    the highest spot actually used this game (at least N - 1), and the
+  ///    order counts 2, 3, 4 ... from here, wrapping at that length.
+  ///  * **10 and up keep counting.** A spot above the current lineup length
+  ///    means the lineup is longer than assumed, so the order simply keeps
+  ///    incrementing (10 → 11 → 12 ...) until 1 is entered again.
   void updateBattingOrderSlot(int slot) {
-    if (slot == 1 && battingOrderSlot > 1 && battingOrderSlot < lineupSize) {
-      lineupSize = battingOrderSlot;
+    if (slot < 1) return;
+    final due = battingOrderSlot;
+    if (slot == 1 && due > 1) {
+      final highest = _highestOrderThisGame();
+      final size = (due - 1) > highest ? (due - 1) : highest;
+      lineupSize = size < 1 ? 1 : size;
+    } else if (slot > lineupSize) {
+      lineupSize = openLineup;
     }
     battingOrderSlot = slot;
     notifyListeners();
+  }
+
+  /// Highest batting-order spot logged so far in the current game (0 if none).
+  int _highestOrderThisGame() {
+    var highest = 0;
+    for (final p in pitches) {
+      if (p.game == currentOpponent &&
+          p.gameNumber == currentGameNumber &&
+          p.season == currentSeason &&
+          p.battingOrder > highest) {
+        highest = p.battingOrder;
+      }
+    }
+    return highest;
+  }
+
+  /// Rebuilds [lineupSize] from the saved log when a game is resumed: a
+  /// spot-1 batter showing up after higher spots means the lineup wrapped at
+  /// the highest spot seen; spots of 10+ with no wrap yet mean the lineup is
+  /// still open-ended; otherwise the standard 9.
+  int _inferLineupSize() {
+    var highest = 0;
+    var wrapped = false;
+    int? lastPa;
+    for (final p in pitches) {
+      if (p.game != currentOpponent ||
+          p.gameNumber != currentGameNumber ||
+          p.season != currentSeason) {
+        continue;
+      }
+      if (p.paId == lastPa) continue; // same plate appearance
+      lastPa = p.paId;
+      if (p.battingOrder == 1 && highest > 1) wrapped = true;
+      if (p.battingOrder > highest) highest = p.battingOrder;
+    }
+    if (wrapped) return highest;
+    return highest >= 10 ? openLineup : 9;
   }
 
   /// Sets/updates a display name for a jersey #, purely for the person's

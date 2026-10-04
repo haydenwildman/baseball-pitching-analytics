@@ -17,13 +17,14 @@ class YearFilterDropdown extends StatelessWidget {
     return SizedBox(
       width: 110,
       child: DropdownButtonFormField<int?>(
+        isExpanded: true,
         value: session.selectedYear,
         isDense: true,
         decoration: const InputDecoration(labelText: 'Year'),
         items: [
-          const DropdownMenuItem<int?>(value: null, child: Text('All')),
+          const DropdownMenuItem<int?>(value: null, child: Text('All', overflow: TextOverflow.ellipsis)),
           for (final y in years)
-            DropdownMenuItem<int?>(value: y, child: Text('$y')),
+            DropdownMenuItem<int?>(value: y, child: Text('$y', overflow: TextOverflow.ellipsis)),
         ],
         onChanged: (v) => session.setSelectedYear(v),
       ),

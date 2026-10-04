@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_session.dart';
 import '../services/stats_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/value_bar.dart';
 import '../widgets/stat_vbox.dart';
 import '../widgets/year_filter_dropdown.dart';
 
@@ -124,10 +125,11 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                     SizedBox(
                       width: 180,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: _team,
                         decoration: const InputDecoration(labelText: 'Team'),
                         items: teams
-                            .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                            .map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (v) => setState(() {
                           _team = v!;
@@ -138,10 +140,11 @@ class _PitchBreakdownScreenState extends State<PitchBreakdownScreen> {
                     SizedBox(
                       width: 140,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: _gameNum,
                         decoration: const InputDecoration(labelText: 'Game #'),
                         items: gameNums
-                            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                            .map((g) => DropdownMenuItem(value: g, child: Text(g, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (v) => setState(() => _gameNum = v!),
                       ),
@@ -398,6 +401,11 @@ Widget _horizontalBarChart(List<_HBar> bars, {double? maxValue}) {
   }
   final maxVal = maxValue ?? bars.map((b) => b.value).reduce((a, b) => a > b ? a : b);
   final safeMax = maxVal <= 0 ? 1.0 : maxVal;
+  // One shared label column width (sized to the longest label, within sane
+  // bounds) so every bar starts at the same x and long custom pitch names
+  // are ellipsized instead of overflowing.
+  final longest = bars.map((b) => b.label.length).reduce((a, b) => a > b ? a : b);
+  final labelW = (longest * 7.5 + 12).clamp(48.0, 100.0).toDouble();
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,49 +417,28 @@ Widget _horizontalBarChart(List<_HBar> bars, {double? maxValue}) {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 64,
-                child: Text(
-                  b.label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.colMuted,
+                width: labelW,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    b.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.colMuted,
+                    ),
                   ),
                 ),
               ),
               Expanded(
-                child: SizedBox(
-                  height: 26,
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.colBorder,
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: (b.value / safeMax).clamp(0.04, 1.0),
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: b.color,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Text(
-                            b.displayValue,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                child: ValueBar(
+                  fraction: (b.value / safeMax).clamp(0.04, 1.0),
+                  color: b.color,
+                  text: b.displayValue,
+                  fontSize: 11,
+                  radius: 7,
                 ),
               ),
             ],

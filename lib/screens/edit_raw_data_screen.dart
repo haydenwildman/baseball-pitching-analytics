@@ -77,9 +77,10 @@ class _EditRawDataScreenState extends State<EditRawDataScreen> {
             SizedBox(
               width: 130,
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: value,
                 decoration: InputDecoration(labelText: label),
-                items: opts.map((o) => DropdownMenuItem(value: o, child: Text(o.isEmpty ? '(none)' : o))).toList(),
+                items: opts.map((o) => DropdownMenuItem(value: o, child: Text(o.isEmpty ? '(none)' : o, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (v) => setDialogState(() => onChanged(v!)),
               ),
             );

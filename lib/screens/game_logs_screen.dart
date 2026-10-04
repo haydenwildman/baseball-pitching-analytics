@@ -52,9 +52,10 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                 SizedBox(
                   width: 180,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _team,
                     decoration: const InputDecoration(labelText: 'Team'),
-                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() {
                       _team = v!;
                       _gameNum = 'All';
@@ -64,9 +65,10 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                 SizedBox(
                   width: 140,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _gameNum,
                     decoration: const InputDecoration(labelText: 'Game #'),
-                    items: gameNums.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                    items: gameNums.map((g) => DropdownMenuItem(value: g, child: Text(g, overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() => _gameNum = v!),
                   ),
                 ),
@@ -127,11 +129,14 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
       }
       return Card(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
+          padding: const EdgeInsets.fromLTRB(10, 10, 18, 10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+              Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
               const SizedBox(height: 4),
               SizedBox(
                 height: 240,
@@ -142,7 +147,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                     // and opponent labels stay legible, and scroll horizontally
                     // for games that don't fit — never crop the graph.
                     : LayoutBuilder(builder: (context, constraints) {
-                        const perPoint = 70.0;
+                        const perPoint = 76.0;
                         final pointsWidth = log.length * perPoint;
                         final chartWidth =
                             pointsWidth > constraints.maxWidth ? pointsWidth : constraints.maxWidth;
@@ -211,7 +216,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 54,
+                                reservedSize: 60,
                                 // Force exactly one tick per game index — the
                                 // single fix that stops opponent labels from
                                 // repeating along the connecting line.
@@ -229,7 +234,7 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
                                     child: Transform.rotate(
                                       angle: -0.5,
                                       child: SizedBox(
-                                        width: 56,
+                                        width: 60,
                                         child: Text(
                                           '${log[i]['opponent']} #${log[i]['gameNumber']}',
                                           maxLines: 1,
@@ -267,22 +272,21 @@ class _GameLogsScreenState extends State<GameLogsScreen> {
         lineCard('WHIP by Game', 'whip', AppColors.perfAverage, 'WHIP'),
         lineCard('K% by Game', 'kPct', AppColors.perfExcellent, 'K_pct'),
       ];
-      if (constraints.maxWidth < 700) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final c in charts) ...[c, const SizedBox(height: 8)],
-          ],
-        );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // 3 across only when each chart gets >= ~300px; 2 across on mid-size
+      // screens (last chart spans the full row); 1 across on phones.
+      final w = constraints.maxWidth;
+      final cols = w >= 960 ? 3 : (w >= 640 ? 2 : 1);
+      const gap = 8.0;
+      final colW = (w - gap * (cols - 1)) / cols;
+      return Wrap(
+        spacing: gap,
+        runSpacing: 0,
         children: [
-          Expanded(child: charts[0]),
-          const SizedBox(width: 8),
-          Expanded(child: charts[1]),
-          const SizedBox(width: 8),
-          Expanded(child: charts[2]),
+          for (var i = 0; i < charts.length; i++)
+            SizedBox(
+              width: (cols == 2 && i == charts.length - 1 && charts.length.isOdd) ? w : colW,
+              child: charts[i],
+            ),
         ],
       );
     });

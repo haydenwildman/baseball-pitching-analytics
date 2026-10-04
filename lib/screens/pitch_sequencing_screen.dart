@@ -62,9 +62,10 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
                 SizedBox(
                   width: 180,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _team,
                     decoration: const InputDecoration(labelText: 'Team'),
-                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() {
                       _team = v!;
                       _gameNum = 'All';
@@ -74,9 +75,10 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
                 SizedBox(
                   width: 140,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _gameNum,
                     decoration: const InputDecoration(labelText: 'Game #'),
-                    items: gameNums.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                    items: gameNums.map((g) => DropdownMenuItem(value: g, child: Text(g, overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() => _gameNum = v!),
                   ),
                 ),
@@ -132,13 +134,15 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                Text(s['seq'] as String,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                        color: good ? AppColors.perfExcellent : AppColors.colError)),
-                const Spacer(),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(
+                  child: Text(s['seq'] as String,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                          color: good ? AppColors.perfExcellent : AppColors.colError)),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
@@ -226,26 +230,11 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
                   for (final p in putAway)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(children: [
-                        SizedBox(
-                          width: 60,
-                          child: Chip(
-                            label: Text((p['pitchType'] as String).toUpperCase(),
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                            backgroundColor: AppColors.pitchColor(p['pitchType'] as String),
-                          ),
-                        ),
-                        Expanded(
-                          child: LinearProgressIndicator(
-                            value: (p['pct'] as double) / 100,
-                            minHeight: 14,
-                            backgroundColor: AppColors.colBorder,
-                            color: AppColors.pitchColor(p['pitchType'] as String),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('${p['pct']}% (${p['count']}/${p['ofTotal']} K)'),
-                      ]),
+                      child: _PitchBarRow(
+                        pitchType: p['pitchType'] as String,
+                        pct: p['pct'] as double,
+                        detail: '${p['pct']}% (${p['count']}/${p['ofTotal']} K)',
+                      ),
                     ),
               ],
             ),
@@ -265,26 +254,11 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
                   for (final p in firstPitchStrike)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(children: [
-                        SizedBox(
-                          width: 60,
-                          child: Chip(
-                            label: Text((p['pitchType'] as String).toUpperCase(),
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                            backgroundColor: AppColors.pitchColor(p['pitchType'] as String),
-                          ),
-                        ),
-                        Expanded(
-                          child: LinearProgressIndicator(
-                            value: (p['pct'] as double) / 100,
-                            minHeight: 14,
-                            backgroundColor: AppColors.colBorder,
-                            color: AppColors.pitchColor(p['pitchType'] as String),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('${p['pct']}% (${p['count']}/${p['ofTotal']} 1st pitches)'),
-                      ]),
+                      child: _PitchBarRow(
+                        pitchType: p['pitchType'] as String,
+                        pct: p['pct'] as double,
+                        detail: '${p['pct']}% (${p['count']}/${p['ofTotal']} 1st pitches)',
+                      ),
                     ),
               ],
             ),
@@ -317,6 +291,56 @@ class _PitchSequencingScreenState extends State<PitchSequencingScreen> {
 String _fmtAvg(double v) {
   final s = v.toStringAsFixed(3);
   return s.startsWith('0.') ? s.substring(1) : s;
+}
+
+/// One "pitch tag + progress bar + detail" row. The tag is width-bounded (so
+/// long custom pitch names ellipsize instead of overflowing) and the detail
+/// text sits under the bar so it can wrap instead of squeezing the bar.
+class _PitchBarRow extends StatelessWidget {
+  final String pitchType;
+  final double pct;
+  final String detail;
+  const _PitchBarRow({required this.pitchType, required this.pct, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.pitchColor(pitchType);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 56, maxWidth: 104),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+            child: Text(
+              pitchType.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LinearProgressIndicator(
+                value: (pct / 100).clamp(0.0, 1.0),
+                minHeight: 14,
+                backgroundColor: AppColors.colBorder,
+                color: color,
+              ),
+              const SizedBox(height: 3),
+              Text(detail, style: const TextStyle(fontSize: 12, color: AppColors.colText)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _MiniTag extends StatelessWidget {
@@ -391,13 +415,21 @@ class _PitchUsageHeatmap extends StatelessWidget {
       // Size every column to fit the available card width exactly (instead
       // of fixed pixel widths inside a horizontally-scrolling container) so
       // the whole heat map is visible without scrolling right.
-      const labelColWidth = 46.0;
-      final available = (constraints.maxWidth - labelColWidth).clamp(0.0, double.infinity);
+      // Label column grows with the longest (custom) pitch name, within bounds.
+      final longestPitch = pitchTypes.fold<int>(0, (a, p) => p.length > a ? p.length : a);
+      final labelColWidth = (longestPitch * 6.5 + 12).clamp(46.0, 88.0).toDouble();
+      // Each cell holds three stacked values (".287", "STR%", ...), so a column
+      // needs a minimum width to stay legible. On narrow screens the table keeps
+      // that width and scrolls sideways instead of crushing 12 columns to ~20px.
+      const minColWidth = 54.0;
+      final neededWidth = labelColWidth + counts.length * minColWidth;
+      final tableWidth = constraints.maxWidth >= neededWidth ? constraints.maxWidth : neededWidth;
+      final available = (tableWidth - labelColWidth).clamp(0.0, double.infinity);
       final colWidth = counts.isEmpty ? available : available / counts.length;
 
-      return Table(
+      final table = Table(
         defaultColumnWidth: FixedColumnWidth(colWidth),
-        columnWidths: {0: const FixedColumnWidth(labelColWidth)},
+        columnWidths: {0: FixedColumnWidth(labelColWidth)},
         border: TableBorder.all(color: AppColors.colBorder, width: 2),
         children: [
           TableRow(
@@ -427,12 +459,21 @@ class _PitchUsageHeatmap extends StatelessWidget {
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Container(width: 7, height: 7, decoration: BoxDecoration(color: AppColors.pitchColor(pt), shape: BoxShape.circle)),
                   const SizedBox(height: 2),
-                  Text(pt.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 9), textAlign: TextAlign.center),
+                  Text(pt.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 9),
+                      textAlign: TextAlign.center),
                 ]),
               ),
               for (final count in counts) cellWidget(count, pt),
             ]),
         ],
+      );
+      if (constraints.maxWidth >= neededWidth) return table;
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(width: tableWidth, child: table),
       );
     });
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'value_bar.dart';
 import '../services/stats_service.dart' show statProgressFraction;
 import 'stat_hold_info.dart';
 
@@ -186,61 +187,34 @@ class PerfStatBar extends StatelessWidget {
           // within its perf tier) shows the stat's value inside it,
           // right-aligned within the fill. For graded stats, small dots
           // mark where each next color tier begins, doubling as a key.
-          SizedBox(
-            width: double.infinity,
-            height: 26,
-            child: LayoutBuilder(builder: (context, constraints) {
-              final trackWidth = constraints.maxWidth;
-              return Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.colBorder,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: frac,
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: barColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        value,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: onBarColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (showKeyDots)
-                    for (final tick in _tierKeyTicks)
-                      Positioned(
-                        left: (trackWidth * tick.at) - 3.5,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: tick.color,
-                              border: Border.all(color: Colors.white, width: 1.25),
+          ValueBar(
+            fraction: frac,
+            color: barColor,
+            text: value,
+            textColor: onBarColor,
+            overlay: !showKeyDots
+                ? null
+                : (trackWidth) => Stack(
+                      children: [
+                        for (final tick in _tierKeyTicks)
+                          Positioned(
+                            left: (trackWidth * tick.at) - 3.5,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: tick.color,
+                                  border: Border.all(color: Colors.white, width: 1.25),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                ],
-              );
-            }),
+                      ],
+                    ),
           ),
           if (scaleHint != null) ...[
             const SizedBox(height: 3),

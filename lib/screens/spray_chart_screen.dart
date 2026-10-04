@@ -53,19 +53,21 @@ class _SprayChartScreenState extends State<SprayChartScreen> {
                 SizedBox(
                   width: 160,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _team,
                     decoration: const InputDecoration(labelText: 'Team'),
-                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                    items: teams.map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis))).toList(),
                     onChanged: (v) => setState(() => _team = v!),
                   ),
                 ),
                 SizedBox(
                   width: 140,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _outcome,
                     decoration: const InputDecoration(labelText: 'Outcome'),
                     items: ['All', 'out', '1b', '2b', '3b', 'hr', 'e', 'dp', 'fc']
-                        .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                        .map((o) => DropdownMenuItem(value: o, child: Text(o, overflow: TextOverflow.ellipsis)))
                         .toList(),
                     onChanged: (v) => setState(() => _outcome = v!),
                   ),
@@ -73,10 +75,11 @@ class _SprayChartScreenState extends State<SprayChartScreen> {
                 SizedBox(
                   width: 130,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _pitch,
                     decoration: const InputDecoration(labelText: 'Pitch'),
                     items: ['All', 'fb', 'cv', 'ch', 'sl', 'other']
-                        .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                        .map((o) => DropdownMenuItem(value: o, child: Text(o, overflow: TextOverflow.ellipsis)))
                         .toList(),
                     onChanged: (v) => setState(() => _pitch = v!),
                   ),
@@ -84,10 +87,11 @@ class _SprayChartScreenState extends State<SprayChartScreen> {
                 SizedBox(
                   width: 110,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _hand,
                     decoration: const InputDecoration(labelText: 'Hand'),
                     items: ['All', 'R', 'L']
-                        .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                        .map((o) => DropdownMenuItem(value: o, child: Text(o, overflow: TextOverflow.ellipsis)))
                         .toList(),
                     onChanged: (v) => setState(() => _hand = v!),
                   ),

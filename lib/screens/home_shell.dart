@@ -185,13 +185,17 @@ class _HomeShellState extends State<HomeShell> {
                       const SizedBox(width: 10),
                       Icon(_iconFor(_selected), size: 19, color: AppColors.ink),
                       const SizedBox(width: 8),
-                      Text(
-                        _selected,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                            color: AppColors.ink),
+                      Flexible(
+                        child: Text(
+                          _selected,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              color: AppColors.ink),
+                        ),
                       ),
                     ],
                   ),

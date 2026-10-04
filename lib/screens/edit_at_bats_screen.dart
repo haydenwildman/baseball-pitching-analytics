@@ -46,7 +46,9 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                   const Text('Select At-Bat', style: TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: Responsive.isPhone(context) ? 280 : 480,
+                    height: (MediaQuery.sizeOf(context).height * (Responsive.isPhone(context) ? 0.4 : 0.6))
+                        .clamp(260.0, 560.0)
+                        .toDouble(),
                     child: candidates.isEmpty
                         ? const Center(
                             child: Text('No balls-in-play logged yet.', style: TextStyle(color: Colors.grey)))
@@ -73,6 +75,7 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Text('${idx + 1}',
                                           style: TextStyle(
@@ -84,10 +87,14 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text('${row.game} G${row.gameNumber} | #${row.batterNumber}',
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
                                                     fontWeight: FontWeight.w700,
                                                     color: selected ? Colors.white : AppColors.colText)),
                                             Text('${row.pitchType} / ${row.outcome}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
                                                     fontSize: 12,
                                                     color: selected ? Colors.white70 : Colors.grey)),
@@ -130,18 +137,22 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                     const Text('Tap a row to select.', style: TextStyle(color: Colors.grey))
                   else ...[
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _battedType,
                       decoration: const InputDecoration(labelText: 'Batted Type'),
                       items: const [
-                        DropdownMenuItem(value: 'gb', child: Text('Ground Ball')),
-                        DropdownMenuItem(value: 'ld', child: Text('Line Drive')),
-                        DropdownMenuItem(value: 'fb', child: Text('Fly Ball')),
+                        DropdownMenuItem(value: 'gb', child: Text('Ground Ball', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'ld', child: Text('Line Drive', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'fb', child: Text('Fly Ball', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) => setState(() => _battedType = v!),
                     ),
                     const SizedBox(height: 8),
                     const Text('Click field to mark landing spot:', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    AspectRatio(
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: AspectRatio(
                       aspectRatio: 1,
                       child: LayoutBuilder(
                         builder: (layoutCtx, constraints) {
@@ -162,12 +173,14 @@ class _EditAtBatsScreenState extends State<EditAtBatsScreen> {
                         },
                       ),
                     ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(_pendingX == null
                         ? 'Click field to set location'
                         : 'New: (${_pendingX!.round()}, ${_pendingY!.round()})'),
                     const SizedBox(height: 8),
-                    Row(children: [
+                    ResponsiveRow(breakpoint: 300, stackedGap: 8, children: [
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.colSuccess),

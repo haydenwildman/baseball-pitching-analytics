@@ -151,7 +151,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                             value: u.tier,
                             underline: const SizedBox(),
                             items: UserTier.values
-                                .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
+                                .map((t) => DropdownMenuItem(value: t, child: Text(t.label, overflow: TextOverflow.ellipsis)))
                                 .toList(),
                             onChanged: (v) => v == null ? null : _changeTier(u, v),
                           )),
@@ -159,7 +159,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                             value: u.status,
                             underline: const SizedBox(),
                             items: SubStatus.values
-                                .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))
+                                .map((s) => DropdownMenuItem(value: s, child: Text(s.label, overflow: TextOverflow.ellipsis)))
                                 .toList(),
                             onChanged: (v) => v == null ? null : _changeStatus(u, v),
                           )),
@@ -221,10 +221,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                     SizedBox(
                       width: 140,
                       child: DropdownButtonFormField<UserTier>(
+                        isExpanded: true,
                         value: _newTier,
                         decoration: const InputDecoration(labelText: 'Tier'),
                         items: UserTier.values
-                            .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
+                            .map((t) => DropdownMenuItem(value: t, child: Text(t.label, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (v) => setState(() => _newTier = v!),
                       ),

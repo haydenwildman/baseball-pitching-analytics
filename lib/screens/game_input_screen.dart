@@ -43,6 +43,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
 
   late int _selectedYear;
   int? _lastSyncedOrder;
+
+  /// True once the person has typed in the Order box on the New Batter form —
+  /// until then the box simply follows the auto-advanced batting order.
+  bool _orderEdited = false;
   late List<int> _yearOptions;
 
   _Stage _stage = _Stage.pitchType;
@@ -242,10 +246,11 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   value: editYear,
                   decoration: const InputDecoration(labelText: 'Year'),
                   items: _yearOptions
-                      .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                      .map((y) => DropdownMenuItem(value: y, child: Text('$y', overflow: TextOverflow.ellipsis)))
                       .toList(),
                   onChanged: (v) => setDialogState(() => editYear = v!),
                 ),
@@ -306,10 +311,11 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
+                  isExpanded: true,
                   value: newYear,
                   decoration: const InputDecoration(labelText: 'Year'),
                   items: _yearOptions
-                      .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                      .map((y) => DropdownMenuItem(value: y, child: Text('$y', overflow: TextOverflow.ellipsis)))
                       .toList(),
                   onChanged: (v) => setDialogState(() => newYear = v!),
                 ),
@@ -337,6 +343,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
       _jerseyCtrl.clear();
       _nameCtrl.clear();
       _orderCtrl.text = '1';
+      _orderEdited = false;
       _lastSyncedOrder = null;
       setState(() {
         _pitchType = null;
@@ -362,6 +369,7 @@ class _GameInputScreenState extends State<GameInputScreen> {
     // retyping everything.
     _jerseyCtrl.text = session.committedJersey?.toString() ?? '';
     _orderCtrl.text = session.battingOrderSlot.toString();
+    _orderEdited = false;
     _nameCtrl.text = session.committedJersey != null
         ? (session.batterNames[session.committedJersey] ?? '')
         : '';
@@ -376,7 +384,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
           .showSnackBar(const SnackBar(content: Text('Enter a jersey #.')));
       return;
     }
-    final order = int.tryParse(_orderCtrl.text) ?? session.battingOrderSlot;
+    final typedOrder = int.tryParse(_orderCtrl.text);
+    // Blank / invalid / zero falls back to the auto-advanced spot, so the
+    // person normally only has to type the jersey #.
+    final order = (typedOrder == null || typedOrder < 1) ? session.battingOrderSlot : typedOrder;
     if (!session.lineupLocked) {
       // Bootstraps the very first plate appearance of the lineup.
       session.setBatter(jersey, order);
@@ -393,6 +404,9 @@ class _GameInputScreenState extends State<GameInputScreen> {
     }
     _jerseyCtrl.clear();
     _nameCtrl.clear();
+    _orderEdited = false;
+    _lastSyncedOrder = session.battingOrderSlot;
+    _orderCtrl.text = session.battingOrderSlot.toString();
     setState(() => _stage = _Stage.pitchType);
   }
 
@@ -422,6 +436,16 @@ class _GameInputScreenState extends State<GameInputScreen> {
       er: _erValue.toDouble(),
     );
     if (!mounted) return;
+    if (result.endedAB) {
+      // The batting order auto-advanced (or wrapped) — put the new spot in the
+      // Order box right now, so on the New Batter form the person only has to
+      // type the jersey #.
+      _orderCtrl.text = result.nextBattingOrder.toString();
+      _lastSyncedOrder = result.nextBattingOrder;
+      _orderEdited = false;
+      _jerseyCtrl.clear();
+      _nameCtrl.clear();
+    }
     setState(() {
       _pitchType = null;
       _call = null;
@@ -1104,7 +1128,10 @@ class _GameInputScreenState extends State<GameInputScreen> {
     // instead of leaving whatever was last typed in the box.
     if (_lastSyncedOrder != session.battingOrderSlot) {
       _lastSyncedOrder = session.battingOrderSlot;
-      if (_stage != _Stage.newBatter) _orderCtrl.text = session.battingOrderSlot.toString();
+      if (!(_stage == _Stage.newBatter && _orderEdited)) {
+        _orderCtrl.text = session.battingOrderSlot.toString();
+        _orderEdited = false;
+      }
     }
 
     return Column(
@@ -1171,11 +1198,12 @@ class _GameInputScreenState extends State<GameInputScreen> {
                       SizedBox(
                         width: _phone ? ((MediaQuery.sizeOf(context).width - 2 * Responsive.pagePadding(context) - 2 * 12 - 3) - 10) / 2 : 100,
                         child: DropdownButtonFormField<int>(
+                          isExpanded: true,
                           value: _selectedYear,
                           isDense: true,
                           decoration: const InputDecoration(labelText: 'Year'),
                           items: _yearOptions
-                              .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                              .map((y) => DropdownMenuItem(value: y, child: Text('$y', overflow: TextOverflow.ellipsis)))
                               .toList(),
                           onChanged: (v) => setState(() => _selectedYear = v!),
                         ),
@@ -1404,6 +1432,8 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 decoration: const InputDecoration(labelText: 'Jersey #'),
                 autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _confirmBatterEntry(),
               ),
             );
             final nameField = SizedBox(
@@ -1420,8 +1450,11 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 controller: _orderCtrl,
                 keyboardType: TextInputType.number,
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                onChanged: (_) => _orderEdited = true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _confirmBatterEntry(),
                 decoration: InputDecoration(
-                    labelText: _phone ? 'Order (1-9)' : 'Batting Order (1-9)'),
+                    labelText: _phone ? 'Order' : 'Batting Order'),
               ),
             );
             return Wrap(
@@ -1433,7 +1466,13 @@ class _GameInputScreenState extends State<GameInputScreen> {
                   : [jerseyField, nameField, orderField],
             );
           }),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          const Text(
+            'The batting order advances on its own — just type the jersey #. '
+            'Enter 1 to start the lineup over; 10 and up keep counting.',
+            style: TextStyle(fontSize: 11.5, color: AppColors.colMuted),
+          ),
+          const SizedBox(height: 16),
           const Text('Bats',
               style: TextStyle(
                   fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
@@ -2079,8 +2118,14 @@ class _GameInputScreenState extends State<GameInputScreen> {
               children: [
                 const Text('BATTER HISTORY',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
-                const Spacer(),
-                Text('$team · #$jersey', style: const TextStyle(fontSize: 11, color: AppColors.colMuted)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('$team · #$jersey',
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: AppColors.colMuted)),
+                ),
               ],
             ),
             const SizedBox(height: 6),
@@ -2133,77 +2178,91 @@ class _GameInputScreenState extends State<GameInputScreen> {
               // Last At-Bat + Previous Sequences side by side — condenses
               // the vertical space these two related blocks used to take
               // stacked on top of one another.
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('LAST AT-BAT',
-                            style: TextStyle(
-                                fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
-                        const SizedBox(height: 4),
-                        _compactAtBatSequence(history.lastAtBat!),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: _previousSequencesTile(history),
-                  ),
-                ],
-              ),
+              LayoutBuilder(builder: (context, c) {
+                final lastAtBat = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('LAST AT-BAT',
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
+                    const SizedBox(height: 4),
+                    _atBatCard(history.lastAtBat!, history.jersey),
+                  ],
+                );
+                // Wide: the at-bat takes the room, the "Previous Sequences" tile
+                // sits beside it. Narrow (phone): stack them so the sequence
+                // chips get the full width.
+                if (c.maxWidth < 560) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      lastAtBat,
+                      const SizedBox(height: 8),
+                      _previousSequencesTile(history),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 3, child: lastAtBat),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 2, child: _previousSequencesTile(history)),
+                  ],
+                );
+              }),
               const SizedBox(height: 10),
               const Divider(height: 1, thickness: 1, color: AppColors.colBorder),
               const SizedBox(height: 8),
               // Batter Tendencies + Spray Chart side by side when there's
               // spray data; tendencies alone (full width) otherwise.
               if (history.sprayPoints.isNotEmpty)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('BATTER TENDENCIES',
-                              style: TextStyle(
-                                  fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
-                          const SizedBox(height: 6),
-                          _batterTendenciesBlock(history),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('BATTER SPRAY CHART',
-                              style: TextStyle(
-                                  fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
-                          const SizedBox(height: 6),
-                          Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 150, maxHeight: 150),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: SprayFieldSurface(sprayPoints: history.sprayPoints),
-                              ),
-                            ),
+                LayoutBuilder(builder: (context, c) {
+                  final tendencies = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('BATTER TENDENCIES',
+                          style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
+                      const SizedBox(height: 6),
+                      _batterTendenciesBlock(history),
+                    ],
+                  );
+                  final spray = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('BATTER SPRAY CHART',
+                          style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 190, maxHeight: 190),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: SprayFieldSurface(sprayPoints: history.sprayPoints),
                           ),
-                          const SizedBox(height: 6),
-                          _sprayOutcomeLegend(history.sprayPoints),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
-                )
+                      const SizedBox(height: 6),
+                      _sprayOutcomeLegend(history.sprayPoints),
+                    ],
+                  );
+                  if (c.maxWidth < 560) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [tendencies, const SizedBox(height: 12), spray],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: tendencies),
+                      const SizedBox(width: 12),
+                      Expanded(flex: 2, child: spray),
+                    ],
+                  );
+                })
               else ...[
                 const Text('BATTER TENDENCIES',
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.colMuted, letterSpacing: 1)),
@@ -2268,29 +2327,28 @@ class _GameInputScreenState extends State<GameInputScreen> {
   /// Grades the BATTER's own offense (batter_* keys — the mirror image of
   /// the pitcher-allowed AVG/OBP/SLG grading used elsewhere in the app).
   Widget _batterStatsGrid(BatterOffenseStats o) {
-    return Column(
-      children: [
-        Row(children: [
-          Expanded(child: _miniStatCell('AVG', _fmtRate(o.avg), o.avg, 'batter_AVG')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('OBP', _fmtRate(o.obp), o.obp, 'batter_OBP')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('SLG', _fmtRate(o.slg), o.slg, 'batter_SLG')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('OPS', _fmtRate(o.ops), o.ops, 'batter_OPS')),
-        ]),
-        const SizedBox(height: 6),
-        Row(children: [
-          Expanded(child: _miniStatCell('BB%', _fmtPct(o.bbPct), o.bbPct, 'batter_BB_pct')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('K%', _fmtPct(o.kPct), o.kPct, 'batter_K_pct')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('BABIP', _fmtRate(o.babip), o.babip, 'batter_BABIP')),
-          const SizedBox(width: 6),
-          Expanded(child: _miniStatCell('AB', '${o.ab}', null, null)),
-        ]),
-      ],
-    );
+    final cells = <Widget Function()>[
+      () => _miniStatCell('AVG', _fmtRate(o.avg), o.avg, 'batter_AVG'),
+      () => _miniStatCell('OBP', _fmtRate(o.obp), o.obp, 'batter_OBP'),
+      () => _miniStatCell('SLG', _fmtRate(o.slg), o.slg, 'batter_SLG'),
+      () => _miniStatCell('OPS', _fmtRate(o.ops), o.ops, 'batter_OPS'),
+      () => _miniStatCell('BB%', _fmtPct(o.bbPct), o.bbPct, 'batter_BB_pct'),
+      () => _miniStatCell('K%', _fmtPct(o.kPct), o.kPct, 'batter_K_pct'),
+      () => _miniStatCell('BABIP', _fmtRate(o.babip), o.babip, 'batter_BABIP'),
+      () => _miniStatCell('AB', '${o.ab}', null, null),
+    ];
+    // 8 across when there is room, otherwise 4 (two rows), and 2 on very
+    // narrow panels — each cell always keeps enough width for its value.
+    return LayoutBuilder(builder: (context, c) {
+      const gap = 6.0;
+      final cols = c.maxWidth >= 640 ? 8 : (c.maxWidth >= 300 ? 4 : 2);
+      final w = (c.maxWidth - gap * (cols - 1)) / cols;
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [for (final cell in cells) SizedBox(width: w.floorToDouble(), child: cell())],
+      );
+    });
   }
 
   /// One small stat cell: label, value, and a thin color-graded fill bar
@@ -2315,13 +2373,20 @@ class _GameInputScreenState extends State<GameInputScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.3, color: AppColors.colMuted)),
           const SizedBox(height: 1),
-          Text(display,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: hasValue ? AppColors.colText : AppColors.colMuted)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(display,
+                maxLines: 1,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: hasValue ? AppColors.colText : AppColors.colMuted)),
+          ),
           const SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
@@ -2341,69 +2406,115 @@ class _GameInputScreenState extends State<GameInputScreen> {
     );
   }
 
-  /// Last At-Bat, rendered as plain compact rows — "0-0  Fastball  Ball" —
-  /// with no per-pitch cards and no decorative arrows between columns.
-  Widget _compactAtBatSequence(AtBatSequence ab) {
+  /// Compact label for one pitch's result in the sequence line (same existing
+  /// terminology as everywhere else; a ball in play is just "BIP").
+  String _pitchResultShort(PitchEvent p) {
+    if (p.call == 'ip') return 'BIP';
+    return callFullNames[p.call] ??
+        outcomeFullNames[p.outcome] ??
+        (p.outcome ?? p.call ?? '');
+  }
+
+  /// One at-bat as a compact card — used for "Last At-Bat" and for every row
+  /// of the Previous Sequences list so Batting History looks the same
+  /// everywhere:
+  ///
+  ///   #12 — Smith                                   G4 · 2026 · Mar 3
+  ///   [1 FB Called Strike] [2 CH Ball] [3 FB Foul Ball] [4 CV BIP]
+  ///   STRIKEOUT (SWINGING)                                    4 pitches
+  ///
+  /// The sequence wraps onto as many lines as the width needs (no horizontal
+  /// overflow on phones), the result is the largest/boldest line, and pitch
+  /// type text keeps its existing pitch-type colors.
+  Widget _atBatCard(AtBatSequence ab, int jersey) {
+    final name = context.read<AppSession>().batterNames[jersey];
+    final batter = (name != null && name.isNotEmpty) ? '#$jersey — $name' : '#$jersey';
+    final result = ab.finalOutcome != null
+        ? (outcomeFullNames[ab.finalOutcome] ?? ab.finalOutcome!.toUpperCase()).toUpperCase()
+        : 'IN PROGRESS';
+    final n = ab.pitches.length;
+
+    Widget pitchChip(int i) {
+      final p = ab.pitches[i];
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.colBorder),
+        ),
+        child: Text.rich(
+          TextSpan(children: [
+            TextSpan(
+                text: '${i + 1}  ',
+                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.colMuted)),
+            TextSpan(
+                text: _pitchTypeLabel(p.pitchType),
+                style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.pitchColor(p.pitchType))),
+            TextSpan(
+                text: '  ${_pitchResultShort(p)}',
+                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.ink)),
+          ]),
+          style: const TextStyle(fontSize: 11.5),
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
       decoration: BoxDecoration(
         color: AppColors.tint,
         borderRadius: BorderRadius.circular(8),
+        border: const Border(left: BorderSide(color: AppColors.brandOrange, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
+                child: Text(batter,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: AppColors.ink)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
                 child: Text(
-                  'Game ${ab.gameNumber} · ${ab.season} · ${DateFormat('MMM d').format(ab.date)}',
+                  'G${ab.gameNumber} · ${ab.season} · ${DateFormat('MMM d').format(ab.date)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.colMuted),
                 ),
               ),
-              if (ab.finalOutcome != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(6)),
-                  child: Text(
-                    outcomeFullNames[ab.finalOutcome] ?? ab.finalOutcome!.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
-                  ),
-                ),
             ],
           ),
-          const SizedBox(height: 4),
-          for (var i = 0; i < ab.pitches.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 38,
-                    child: Text(ab.counts[i].$1,
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.colMuted)),
-                  ),
-                  SizedBox(
-                    width: 74,
-                    child: Text(
-                      _pitchTypeLabel(ab.pitches[i].pitchType),
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.pitchColor(ab.pitches[i].pitchType)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      outcomeFullNames[ab.pitches[i].outcome] ??
-                          callFullNames[ab.pitches[i].call] ??
-                          (ab.pitches[i].outcome ?? ab.pitches[i].call ?? ''),
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: [for (var i = 0; i < n; i++) pitchChip(i)],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(result,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.3, color: AppColors.ink)),
               ),
-            ),
+              const SizedBox(width: 8),
+              Text('$n pitch${n == 1 ? "" : "es"}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.colMuted)),
+            ],
+          ),
         ],
       ),
     );
@@ -2525,71 +2636,16 @@ class _GameInputScreenState extends State<GameInputScreen> {
                 const Divider(height: 1),
                 Expanded(
                   child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     itemCount: history.atBats.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.colBorder),
-                    itemBuilder: (_, i) => _previousSequenceRow(history.atBats[i]),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) => _atBatCard(history.atBats[i], history.jersey),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// One collapsed-by-default row in the Previous Sequences list —
-  /// "Game 12 · Ground Out · 4 pitches" — that expands to the full
-  /// count-by-count sequence for that at-bat.
-  Widget _previousSequenceRow(AtBatSequence ab) {
-    final outcomeLabel = ab.finalOutcome != null
-        ? (outcomeFullNames[ab.finalOutcome] ?? ab.finalOutcome!.toUpperCase())
-        : 'In progress';
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        title: Text(
-          'Game ${ab.gameNumber}  ·  $outcomeLabel  ·  ${ab.pitches.length} pitch${ab.pitches.length == 1 ? "" : "es"}',
-          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.colText),
-        ),
-        subtitle: Text('${ab.season} · ${DateFormat('MMM d').format(ab.date)}',
-            style: const TextStyle(fontSize: 10.5, color: AppColors.colMuted)),
-        children: [
-          for (var i = 0; i < ab.pitches.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 38,
-                    child: Text(ab.counts[i].$1,
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.colMuted)),
-                  ),
-                  SizedBox(
-                    width: 74,
-                    child: Text(
-                      _pitchTypeLabel(ab.pitches[i].pitchType),
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.pitchColor(ab.pitches[i].pitchType)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      outcomeFullNames[ab.pitches[i].outcome] ??
-                          callFullNames[ab.pitches[i].call] ??
-                          (ab.pitches[i].outcome ?? ab.pitches[i].call ?? ''),
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
       ),
     );
   }
